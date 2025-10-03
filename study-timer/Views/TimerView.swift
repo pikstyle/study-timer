@@ -6,6 +6,7 @@
 //
 import SwiftUI
 internal import Combine
+
 struct TimerView: View {
     @State private var time = 0.0
     @State private var isRunning: Bool = false
@@ -69,6 +70,7 @@ struct TimerView: View {
         time = 0.0
     }
 }
+
 #Preview {
     TimerView()
 }
