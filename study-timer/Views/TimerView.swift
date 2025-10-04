@@ -4,19 +4,19 @@
 //
 //  Created by Simon M on 27/09/2025.
 //
+
 import SwiftUI
-internal import Combine
 
 struct TimerView: View {
-    @State private var time = 0.0
-    @State private var isRunning: Bool = false
+    @State private var seconds = 0
+    @State private var isRunning = false
     @State private var timer: Timer?
     
     var timeString: String {
-        let hours = Int(time) / 3600
-        let minutes = (Int(time) % 3600) / 60
-        let seconds = Int(time) % 60
-        return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+        let hours = seconds / 3600
+        let minutes = (seconds % 3600) / 60
+        let secs = seconds % 60
+        return String(format: "%d:%02d:%02d", hours, minutes, secs)
     }
     
     var body: some View {
@@ -25,6 +25,7 @@ struct TimerView: View {
                 .font(.system(size: 64))
                 .monospacedDigit()
                 .padding()
+            
             HStack {
                 Button {
                     if isRunning {
@@ -33,7 +34,7 @@ struct TimerView: View {
                         startTimer()
                     }
                 } label: {
-                    Image(systemName: isRunning ? "pause" : "play")
+                    Image(systemName: isRunning ? "pause.fill" : "play.fill")
                 }
                 .padding()
                 .background(isRunning ? .red : .green)
@@ -43,7 +44,7 @@ struct TimerView: View {
                 Button {
                     resetTimer()
                 } label: {
-                    Image(systemName: "restart")
+                    Image(systemName: "arrow.counterclockwise")
                 }
                 .padding()
                 .background(.blue)
@@ -51,12 +52,15 @@ struct TimerView: View {
                 .cornerRadius(10)
             }
         }
+        .onDisappear {
+            timer?.invalidate()
+        }
     }
     
     private func startTimer() {
         isRunning = true
-        timer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { _ in
-            time += 0.01
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            seconds += 1
         }
     }
     
@@ -67,7 +71,7 @@ struct TimerView: View {
     
     private func resetTimer() {
         stopTimer()
-        time = 0.0
+        seconds = 0
     }
 }
 
