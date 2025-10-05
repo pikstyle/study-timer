@@ -15,7 +15,7 @@ struct MainTabView: View {
                     Label("", systemImage: "chart.pie.fill")
                 }
             
-            Text("Créer")
+            TimerView()
                 .tabItem {
                     Label("", systemImage: "plus.circle.fill")
                 }

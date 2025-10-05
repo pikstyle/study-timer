@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import SwiftData
 
 @main
 struct study_timerApp: App {
