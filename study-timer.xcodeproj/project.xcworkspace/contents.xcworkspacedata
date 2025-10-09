@@ -4,4 +4,10 @@
    <FileRef
       location = "self:">
    </FileRef>
+   <FileRef
+      location = "group:TimeFormatter.swift">
+   </FileRef>
+   <FileRef
+      location = "group:CLEANUP_NOTES.md">
+   </FileRef>
 </Workspace>

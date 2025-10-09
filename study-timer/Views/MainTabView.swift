@@ -9,22 +9,28 @@ import SwiftUI
 
 struct MainTabView: View {
     var body: some View {
-        TabView {
-            Accueil()
-                .tabItem {
-                    Label("", systemImage: "chart.pie.fill")
-                }
-            
-            TimerView()
-                .tabItem {
-                    Label("", systemImage: "plus.circle.fill")
-                }
-            
-            Text("Paramètres")
-                .tabItem {
-                    Label("", systemImage: "gearshape.fill")
-                }
+        ZStack {
+            AppTheme.background.ignoresSafeArea()
+
+            TabView {
+                Accueil()
+                    .tabItem {
+                        Label("Statistiques", systemImage: "chart.pie.fill")
+                    }
+
+                TimerView()
+                    .tabItem {
+                        Label("Timer", systemImage: "timer")
+                    }
+
+                SettingsView()
+                    .tabItem {
+                        Label("Réglages", systemImage: "gearshape.fill")
+                    }
+            }
+            .accentColor(AppTheme.primaryGreen)
         }
+        .preferredColorScheme(.dark)
     }
 }
 

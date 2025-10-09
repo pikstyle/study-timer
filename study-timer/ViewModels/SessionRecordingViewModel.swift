@@ -82,6 +82,18 @@ class SessionRecordingViewModel: ObservableObject {
         selectedCategory = category
     }
 
+    func deleteCategory(_ category: Category) {
+        repository.deleteCategory(category)
+        
+        // Update local categories list
+        availableCategories.removeAll { $0.name == category.name }
+        
+        // If the deleted category was selected, clear selection
+        if selectedCategory?.name == category.name {
+            selectedCategory = nil
+        }
+    }
+
     private func loadCategories() {
         availableCategories = repository.getAllCategories()
     }

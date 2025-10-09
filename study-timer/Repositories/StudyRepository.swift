@@ -12,6 +12,8 @@ import Combine
 extension Notification.Name {
     static let sessionSaved = Notification.Name("sessionSaved")
     static let dataCleared = Notification.Name("dataCleared")
+    static let categoryDeleted = Notification.Name("categoryDeleted")
+    static let categoryRenamed = Notification.Name("categoryRenamed")
 }
 
 protocol StudyRepositoryProtocol {
@@ -20,6 +22,8 @@ protocol StudyRepositoryProtocol {
     func deleteSession(_ session: StudySession)
     func clearAllSessions()
     func getAllCategories() -> [Category]
+    func deleteCategory(_ category: Category)
+    func renameCategory(_ oldCategory: Category, to newName: String) -> Category?
 }
 
 class StudyRepository: StudyRepositoryProtocol {
@@ -70,6 +74,54 @@ class StudyRepository: StudyRepositoryProtocol {
 
     func getAllCategories() -> [Category] {
         return Array(categories).sorted { $0.name < $1.name }
+    }
+
+    func deleteCategory(_ category: Category) {
+        // Remove the category from the set
+        categories.remove(category)
+        
+        // Update sessions to use a default category or handle orphaned sessions
+        // For simplicity, we'll remove sessions with this category
+        sessions.removeAll { $0.categoryName == category.name }
+        
+        saveData()
+        
+        // Notify that a category was deleted
+        NotificationCenter.default.post(name: .categoryDeleted, object: category)
+    }
+
+    func renameCategory(_ oldCategory: Category, to newName: String) -> Category? {
+        guard !newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        
+        let trimmedName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let newCategory = Category(name: trimmedName)
+        
+        // Check if new name already exists
+        if categories.contains(newCategory) {
+            return nil
+        }
+        
+        // Remove old category and add new one
+        categories.remove(oldCategory)
+        categories.insert(newCategory)
+        
+        // Update all sessions with the old category name
+        for index in sessions.indices {
+            if sessions[index].categoryName == oldCategory.name {
+                sessions[index] = StudySession(
+                    id: sessions[index].id,
+                    duration: sessions[index].duration,
+                    categoryName: trimmedName,
+                    date: sessions[index].date
+                )
+            }
+        }
+        
+        saveData()
+        
+        // Notify that a category was renamed
+        NotificationCenter.default.post(name: .categoryRenamed, object: ["old": oldCategory, "new": newCategory])
+        return newCategory
     }
 
     private func saveData() {

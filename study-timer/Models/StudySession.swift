@@ -19,6 +19,13 @@ struct StudySession: Codable, Identifiable, Equatable {
         self.categoryName = categoryName
         self.date = date
     }
+
+    init(id: UUID, duration: TimeInterval, categoryName: String, date: Date) {
+        self.id = id
+        self.duration = duration
+        self.categoryName = categoryName
+        self.date = date
+    }
 }
 
 extension StudySession {
