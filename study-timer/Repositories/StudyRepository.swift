@@ -22,6 +22,7 @@ protocol StudyRepositoryProtocol {
     func deleteSession(_ session: StudySession)
     func clearAllSessions()
     func getAllCategories() -> [Category]
+    func createCategory(_ category: Category)
     func deleteCategory(_ category: Category)
     func renameCategory(_ oldCategory: Category, to newName: String) -> Category?
 }
@@ -66,7 +67,9 @@ class StudyRepository: StudyRepositoryProtocol {
         UserDefaults.standard.removeObject(forKey: "categories_data")
         UserDefaults.standard.synchronize()
 
-        saveData()
+        // Reset the @AppStorage variables to empty data
+        sessionsData = Data()
+        categoriesData = Data()
 
         // Notify that data was cleared
         NotificationCenter.default.post(name: .dataCleared, object: nil)
@@ -74,6 +77,14 @@ class StudyRepository: StudyRepositoryProtocol {
 
     func getAllCategories() -> [Category] {
         return Array(categories).sorted { $0.name < $1.name }
+    }
+    
+    func createCategory(_ category: Category) {
+        categories.insert(category)
+        saveData()
+        
+        // Notify that a category was created
+        NotificationCenter.default.post(name: .categoryRenamed, object: nil)
     }
 
     func deleteCategory(_ category: Category) {
@@ -92,19 +103,19 @@ class StudyRepository: StudyRepositoryProtocol {
 
     func renameCategory(_ oldCategory: Category, to newName: String) -> Category? {
         guard !newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        
+
         let trimmedName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         let newCategory = Category(name: trimmedName)
-        
+
         // Check if new name already exists
         if categories.contains(newCategory) {
             return nil
         }
-        
+
         // Remove old category and add new one
         categories.remove(oldCategory)
         categories.insert(newCategory)
-        
+
         // Update all sessions with the old category name
         for index in sessions.indices {
             if sessions[index].categoryName == oldCategory.name {
@@ -116,9 +127,12 @@ class StudyRepository: StudyRepositoryProtocol {
                 )
             }
         }
-        
+
+        // Transfer the color from old category to new category
+        CategoryColors.renameCategory(from: oldCategory.name, to: trimmedName)
+
         saveData()
-        
+
         // Notify that a category was renamed
         NotificationCenter.default.post(name: .categoryRenamed, object: ["old": oldCategory, "new": newCategory])
         return newCategory

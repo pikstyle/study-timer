@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import UIKit
 
 class TimerViewModel: ObservableObject {
     @Published var seconds: Int = 0
@@ -15,9 +16,12 @@ class TimerViewModel: ObservableObject {
 
     private var timer: Timer?
     private let repository: StudyRepositoryProtocol
+    private let backgroundService = BackgroundTimerService.shared
 
     init(repository: StudyRepositoryProtocol = StudyRepository.shared) {
         self.repository = repository
+        setupAppLifecycleObservers()
+        restoreTimerState()
     }
 
     var timeString: String {
@@ -31,8 +35,15 @@ class TimerViewModel: ObservableObject {
     func startTimer() {
         guard !isRunning else { return }
         isRunning = true
+        
+        // Démarrer le service en arrière-plan
+        backgroundService.startBackgroundTimer(initialSeconds: seconds)
+        
+        // Démarrer le timer local pour l'UI
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             self.seconds += 1
+            // Mettre à jour périodiquement le service en arrière-plan
+            self.backgroundService.updateLastKnownSeconds(self.seconds)
         }
     }
 
@@ -40,11 +51,15 @@ class TimerViewModel: ObservableObject {
         isRunning = false
         timer?.invalidate()
         timer = nil
+        
+        // Arrêter le service en arrière-plan
+        backgroundService.stopBackgroundTimer()
     }
 
     func resetTimer() {
         stopTimer()
         seconds = 0
+        backgroundService.resetTimer()
     }
 
     func saveToLocalHistory() {
@@ -70,9 +85,79 @@ class TimerViewModel: ObservableObject {
         repository.saveSession(session)
         seconds = 0
     }
+    
+    // MARK: - Background Timer Restoration
+    
+    private func restoreTimerState() {
+        if backgroundService.isTimerRunning {
+            // Restaurer l'état du timer depuis l'arrière-plan
+            seconds = backgroundService.getCurrentTimerSeconds()
+            isRunning = true
+            
+            // Redémarrer le timer local pour l'UI
+            timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                self.seconds += 1
+                self.backgroundService.updateLastKnownSeconds(self.seconds)
+            }
+        } else {
+            // Récupérer les dernières secondes connues
+            seconds = backgroundService.getCurrentTimerSeconds()
+        }
+    }
+    
+    private func setupAppLifecycleObservers() {
+        // Observer quand l'app va en arrière-plan
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+        
+        // Observer quand l'app revient au premier plan
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
+        
+        // Observer quand l'app va se fermer
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillTerminate),
+            name: UIApplication.willTerminateNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func appDidEnterBackground() {
+        backgroundService.handleAppDidEnterBackground()
+    }
+    
+    @objc private func appWillEnterForeground() {
+        if backgroundService.isTimerRunning {
+            // Synchroniser avec le temps réel
+            seconds = backgroundService.getCurrentTimerSeconds()
+            
+            // Redémarrer le timer local si nécessaire
+            if isRunning && timer == nil {
+                timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                    self.seconds += 1
+                    self.backgroundService.updateLastKnownSeconds(self.seconds)
+                }
+            }
+        }
+        backgroundService.handleAppWillEnterForeground()
+    }
+    
+    @objc private func appWillTerminate() {
+        backgroundService.handleAppWillTerminate()
+    }
 
     deinit {
         timer?.invalidate()
+        NotificationCenter.default.removeObserver(self)
     }
 }
 

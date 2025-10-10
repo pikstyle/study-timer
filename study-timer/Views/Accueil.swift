@@ -11,89 +11,76 @@ import Charts
 struct Accueil: View {
     @StateObject private var viewModel = StatisticsViewModel()
     @State private var selectedPeriod: StatsPeriod?
-    @State private var showingDetailedStats = false
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AppTheme.background.ignoresSafeArea()
-
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Today's stats
-                        Button {
-                            selectedPeriod = .today
-                            showingDetailedStats = true
-                        } label: {
-                            StatCard(
-                                icon: "sun.max.fill",
-                                title: "Aujourd'hui",
-                                subtitle: "Temps d'étude",
-                                totalTime: Int(viewModel.todayTime),
-                                chartData: viewModel.todayChartData,
-                                accentColor: AppTheme.primaryGreen
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-
-                        // Week stats
-                        Button {
-                            selectedPeriod = .week
-                            showingDetailedStats = true
-                        } label: {
-                            StatCard(
-                                icon: "calendar.badge.clock",
-                                title: "Cette semaine",
-                                subtitle: "7 derniers jours",
-                                totalTime: Int(viewModel.weekTime),
-                                chartData: viewModel.weekChartData,
-                                accentColor: Color(hex: "0A84FF")
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-
-                        // Month stats
-                        Button {
-                            selectedPeriod = .month
-                            showingDetailedStats = true
-                        } label: {
-                            StatCard(
-                                icon: "chart.bar.fill",
-                                title: "Ce mois",
-                                subtitle: "30 derniers jours",
-                                totalTime: Int(viewModel.monthTime),
-                                chartData: viewModel.monthChartData,
-                                accentColor: Color(hex: "FF9F0A")
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Titre personnalisé
+                    HStack {
+                        Text("Accueil")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundColor(AppTheme.textPrimary)
+                        Spacer()
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 10)
-                    .padding(.bottom, 30)
-                }
-            }
-            .navigationTitle("Statistiques")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(AppTheme.background, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                    .padding(.top, 20)
+
+                    // Today's stats
                     Button {
-                        viewModel.clearAllData()
+                        selectedPeriod = .today
                     } label: {
-                        Image(systemName: "trash")
-                            .foregroundColor(AppTheme.primaryGreen)
+                        StatCard(
+                            icon: "sun.max.fill",
+                            title: "Aujourd'hui",
+                            subtitle: "Temps d'étude",
+                            totalTime: Int(viewModel.todayTime),
+                            chartData: viewModel.todayChartData,
+                            accentColor: AppTheme.primaryGreen
+                        )
                     }
+                    .buttonStyle(PlainButtonStyle())
+
+                    // Week stats
+                    Button {
+                        selectedPeriod = .week
+                    } label: {
+                        StatCard(
+                            icon: "calendar.badge.clock",
+                            title: "Cette semaine",
+                            subtitle: "7 derniers jours",
+                            totalTime: Int(viewModel.weekTime),
+                            chartData: viewModel.weekChartData,
+                            accentColor: Color(hex: "0A84FF")
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    // Month stats
+                    Button {
+                        selectedPeriod = .month
+                    } label: {
+                        StatCard(
+                            icon: "chart.bar.fill",
+                            title: "Ce mois",
+                            subtitle: "30 derniers jours",
+                            totalTime: Int(viewModel.monthTime),
+                            chartData: viewModel.monthChartData,
+                            accentColor: Color(hex: "FF9F0A")
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
             }
+            .background(AppTheme.background)
+            .navigationBarHidden(true)
             .refreshable {
                 viewModel.refresh()
             }
-            .sheet(isPresented: $showingDetailedStats) {
-                if let period = selectedPeriod {
-                    DetailedStatsView(period: period)
-                }
+            .sheet(item: $selectedPeriod) { period in
+                DetailedStatsView(period: period)
             }
         }
     }
@@ -106,6 +93,7 @@ struct StatCard: View {
     let totalTime: Int
     let chartData: [ChartDataPoint]
     let accentColor: Color
+    var additionalStats: [(icon: String, label: String, value: String)]? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -148,6 +136,35 @@ struct StatCard: View {
                     .foregroundColor(accentColor)
             }
 
+            // Additional stats badges
+            if let stats = additionalStats, !stats.isEmpty {
+                HStack(spacing: 12) {
+                    ForEach(stats.indices, id: \.self) { index in
+                        let stat = stats[index]
+                        HStack(spacing: 6) {
+                            Image(systemName: stat.icon)
+                                .font(.system(size: 12))
+                                .foregroundColor(AppTheme.textSecondary)
+
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(stat.label)
+                                    .font(.caption2)
+                                    .foregroundColor(AppTheme.textSecondary)
+
+                                Text(stat.value)
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(AppTheme.textPrimary)
+                            }
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(AppTheme.background)
+                        .cornerRadius(8)
+                    }
+                }
+            }
+
             // Chart
             if !chartData.isEmpty {
                 VStack(spacing: 12) {
@@ -159,15 +176,9 @@ struct StatCard: View {
                             ),
                             innerRadius: .ratio(0.5)
                         )
-                        .foregroundStyle(
-                            by: .value(
-                                Text(verbatim: dataPoint.categoryName),
-                                dataPoint.categoryName
-                            )
-                        )
+                        .foregroundStyle(CategoryColors.color(for: dataPoint.categoryName))
                     }
                     .frame(height: 220)
-                    .chartLegend(position: .bottom, alignment: .center)
 
                     // Category breakdown
                     VStack(spacing: 8) {

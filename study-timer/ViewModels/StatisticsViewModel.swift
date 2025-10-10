@@ -10,10 +10,12 @@ import Combine
 import SwiftUI
 
 // Forward declaration pour éviter les imports circulaires
-enum StatsPeriod: String, CaseIterable {
+enum StatsPeriod: String, CaseIterable, Identifiable {
     case today = "Aujourd'hui"
     case week = "Cette semaine"
     case month = "Ce mois"
+
+    var id: String { self.rawValue }
     
     var icon: String {
         switch self {
@@ -45,6 +47,12 @@ class StatisticsViewModel: ObservableObject {
     @Published var weekTime: TimeInterval = 0
     @Published var monthTime: TimeInterval = 0
     @Published var categoryTimes: [String: TimeInterval] = [:]
+    @Published var yesterdayTime: TimeInterval = 0
+    @Published var dailyAverage: TimeInterval = 0
+    @Published var weeklyAverage: TimeInterval = 0
+    @Published var weekDailyAverage: TimeInterval = 0  // Moyenne/jour de la semaine en cours
+    @Published var monthDailyAverage: TimeInterval = 0 // Moyenne/jour du mois en cours
+    @Published var monthWeeklyAverage: TimeInterval = 0 // Moyenne/semaine du mois en cours
 
     private let repository: StudyRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
@@ -111,6 +119,7 @@ class StatisticsViewModel: ObservableObject {
 
     private func calculateStatistics() {
         let sessions = repository.getAllSessions()
+        let calendar = Calendar.current
 
         todayTime = sessions
             .filter { $0.isToday }
@@ -126,6 +135,147 @@ class StatisticsViewModel: ObservableObject {
 
         categoryTimes = Dictionary(grouping: sessions, by: { $0.categoryName })
             .mapValues { $0.reduce(0) { $0 + $1.duration } }
+
+        // Calculer le temps d'hier
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) ?? Date()
+        yesterdayTime = sessions
+            .filter { calendar.isDate($0.date, inSameDayAs: yesterday) }
+            .reduce(0) { $0 + $1.duration }
+
+        // Calculer la moyenne quotidienne (basée sur les 30 derniers jours)
+        calculateDailyAverage(sessions: sessions, calendar: calendar)
+
+        // Calculer la moyenne hebdomadaire (basée sur les 12 dernières semaines)
+        calculateWeeklyAverage(sessions: sessions, calendar: calendar)
+
+        // Calculer la moyenne quotidienne de la semaine en cours
+        calculateWeekDailyAverage(sessions: sessions, calendar: calendar)
+
+        // Calculer les moyennes du mois en cours
+        calculateMonthAverages(sessions: sessions, calendar: calendar)
+    }
+
+    private func calculateDailyAverage(sessions: [StudySession], calendar: Calendar) {
+        // Obtenir les sessions des 30 derniers jours
+        let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+        let recentSessions = sessions.filter { $0.date >= thirtyDaysAgo }
+
+        guard !recentSessions.isEmpty else {
+            dailyAverage = 0
+            return
+        }
+
+        // Grouper par jour et calculer le total par jour
+        let sessionsByDay = Dictionary(grouping: recentSessions) { session -> Date in
+            calendar.startOfDay(for: session.date)
+        }
+
+        // Calculer le nombre de jours avec au moins une session
+        let daysWithSessions = sessionsByDay.count
+
+        guard daysWithSessions > 0 else {
+            dailyAverage = 0
+            return
+        }
+
+        // Calculer le temps total et la moyenne
+        let totalTime = recentSessions.reduce(0) { $0 + $1.duration }
+        dailyAverage = totalTime / TimeInterval(daysWithSessions)
+    }
+
+    private func calculateWeeklyAverage(sessions: [StudySession], calendar: Calendar) {
+        // Obtenir les sessions des 12 dernières semaines (environ 3 mois)
+        let twelveWeeksAgo = calendar.date(byAdding: .weekOfYear, value: -12, to: Date()) ?? Date()
+        let recentSessions = sessions.filter { $0.date >= twelveWeeksAgo }
+
+        guard !recentSessions.isEmpty else {
+            weeklyAverage = 0
+            return
+        }
+
+        // Grouper par semaine
+        let sessionsByWeek = Dictionary(grouping: recentSessions) { session -> Date in
+            let weekInterval = calendar.dateInterval(of: .weekOfYear, for: session.date)
+            return weekInterval?.start ?? session.date
+        }
+
+        // Calculer le nombre de semaines avec au moins une session
+        let weeksWithSessions = sessionsByWeek.count
+
+        guard weeksWithSessions > 0 else {
+            weeklyAverage = 0
+            return
+        }
+
+        // Calculer le temps total et la moyenne
+        let totalTime = recentSessions.reduce(0) { $0 + $1.duration }
+        weeklyAverage = totalTime / TimeInterval(weeksWithSessions)
+    }
+
+    private func calculateWeekDailyAverage(sessions: [StudySession], calendar: Calendar) {
+        // Obtenir les sessions de la semaine en cours
+        let weekSessions = sessions.filter { $0.isThisWeek }
+
+        guard !weekSessions.isEmpty else {
+            weekDailyAverage = 0
+            return
+        }
+
+        // Grouper par jour
+        let sessionsByDay = Dictionary(grouping: weekSessions) { session -> Date in
+            calendar.startOfDay(for: session.date)
+        }
+
+        let daysWithSessions = sessionsByDay.count
+
+        guard daysWithSessions > 0 else {
+            weekDailyAverage = 0
+            return
+        }
+
+        // Calculer la moyenne quotidienne de la semaine
+        let totalTime = weekSessions.reduce(0) { $0 + $1.duration }
+        weekDailyAverage = totalTime / TimeInterval(daysWithSessions)
+    }
+
+    private func calculateMonthAverages(sessions: [StudySession], calendar: Calendar) {
+        // Obtenir les sessions du mois en cours
+        let monthSessions = sessions.filter { $0.isThisMonth }
+
+        guard !monthSessions.isEmpty else {
+            monthDailyAverage = 0
+            monthWeeklyAverage = 0
+            return
+        }
+
+        // Calculer la moyenne quotidienne du mois
+        let sessionsByDay = Dictionary(grouping: monthSessions) { session -> Date in
+            calendar.startOfDay(for: session.date)
+        }
+
+        let daysWithSessions = sessionsByDay.count
+
+        if daysWithSessions > 0 {
+            let totalTime = monthSessions.reduce(0) { $0 + $1.duration }
+            monthDailyAverage = totalTime / TimeInterval(daysWithSessions)
+        } else {
+            monthDailyAverage = 0
+        }
+
+        // Calculer la moyenne hebdomadaire du mois
+        let sessionsByWeek = Dictionary(grouping: monthSessions) { session -> Date in
+            let weekInterval = calendar.dateInterval(of: .weekOfYear, for: session.date)
+            return weekInterval?.start ?? session.date
+        }
+
+        let weeksWithSessions = sessionsByWeek.count
+
+        if weeksWithSessions > 0 {
+            let totalTime = monthSessions.reduce(0) { $0 + $1.duration }
+            monthWeeklyAverage = totalTime / TimeInterval(weeksWithSessions)
+        } else {
+            monthWeeklyAverage = 0
+        }
     }
 }
 

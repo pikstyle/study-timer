@@ -75,7 +75,7 @@ struct MVVMSessionRecordingView: View {
                             Divider()
                                 .background(AppTheme.divider)
 
-                            // Category Selection
+                            // Category Selection - Version Simplifiée
                             VStack(alignment: .leading, spacing: 12) {
                                 Label {
                                     Text("CATÉGORIE")
@@ -88,82 +88,60 @@ struct MVVMSessionRecordingView: View {
                                         .foregroundColor(AppTheme.primaryGreen)
                                 }
 
-                                if viewModel.availableCategories.isEmpty {
+                                // Liste simple des catégories disponibles
+                                VStack(spacing: 8) {
+                                    ForEach(viewModel.availableCategories) { category in
+                                        Button {
+                                            viewModel.selectCategory(category)
+                                        } label: {
+                                            HStack {
+                                                Circle()
+                                                    .fill(viewModel.selectedCategory?.name == category.name ? AppTheme.primaryGreen : Color.clear)
+                                                    .stroke(AppTheme.primaryGreen, lineWidth: 2)
+                                                    .frame(width: 20, height: 20)
+                                                    .overlay {
+                                                        if viewModel.selectedCategory?.name == category.name {
+                                                            Image(systemName: "checkmark")
+                                                                .font(.system(size: 12, weight: .bold))
+                                                                .foregroundColor(.white)
+                                                        }
+                                                    }
+                                                
+                                                Text(category.name)
+                                                    .foregroundColor(AppTheme.textPrimary)
+                                                    .fontWeight(.medium)
+                                                
+                                                Spacer()
+                                            }
+                                            .padding(16)
+                                            .background(
+                                                viewModel.selectedCategory?.name == category.name 
+                                                    ? AppTheme.primaryGreen.opacity(0.1)
+                                                    : AppTheme.cardBackground
+                                            )
+                                            .cornerRadius(12)
+                                        }
+                                    }
+                                    
+                                    // Bouton simple pour ajouter une catégorie
                                     Button {
                                         viewModel.showNewCategoryAlert()
                                     } label: {
                                         HStack {
                                             Image(systemName: "plus.circle.fill")
-                                            Text("Créer une catégorie")
+                                                .foregroundColor(AppTheme.primaryGreen)
+                                            Text(viewModel.availableCategories.isEmpty ? "Créer votre première catégorie" : "Nouvelle catégorie")
                                                 .fontWeight(.medium)
+                                                .foregroundColor(AppTheme.primaryGreen)
+                                            Spacer()
                                         }
-                                        .foregroundColor(AppTheme.primaryGreen)
-                                        .frame(maxWidth: .infinity)
                                         .padding(16)
-                                        .background(AppTheme.background)
+                                        .background(AppTheme.cardBackground)
                                         .cornerRadius(12)
-                                    }
-                                } else {
-                                    VStack(spacing: 8) {
-                                        // Selected category display or create new button
-                                        if let selectedCategory = viewModel.selectedCategory {
-                                            HStack {
-                                                Text(selectedCategory.name)
-                                                    .foregroundColor(AppTheme.textPrimary)
-                                                    .fontWeight(.medium)
-                                                Spacer()
-                                                Image(systemName: "checkmark.circle.fill")
-                                                    .foregroundColor(AppTheme.primaryGreen)
-                                            }
-                                            .padding(16)
-                                            .background(AppTheme.primaryGreen.opacity(0.1))
-                                            .cornerRadius(12)
-                                        }
-                                        
-                                        // Categories list with swipe actions
-                                        ForEach(viewModel.availableCategories) { category in
-                                            Button {
-                                                viewModel.selectCategory(category)
-                                            } label: {
-                                                HStack {
-                                                    Text(category.name)
-                                                        .foregroundColor(AppTheme.textPrimary)
-                                                        .fontWeight(viewModel.selectedCategory?.name == category.name ? .medium : .regular)
-                                                    Spacer()
-                                                    if viewModel.selectedCategory?.name == category.name {
-                                                        Image(systemName: "checkmark.circle.fill")
-                                                            .foregroundColor(AppTheme.primaryGreen)
-                                                    }
-                                                }
-                                                .padding(12)
-                                                .background(AppTheme.background)
-                                                .cornerRadius(8)
-                                            }
-                                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                                Button {
-                                                    viewModel.deleteCategory(category)
-                                                } label: {
-                                                    Label("Supprimer", systemImage: "trash")
-                                                }
-                                                .tint(.red)
-                                            }
-                                        }
-                                        
-                                        // Add new category button
-                                        Button {
-                                            viewModel.showNewCategoryAlert()
-                                        } label: {
-                                            HStack {
-                                                Image(systemName: "plus.circle")
-                                                Text("Nouvelle catégorie")
-                                                    .fontWeight(.medium)
-                                            }
-                                            .foregroundColor(AppTheme.primaryGreen)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(12)
-                                            .background(AppTheme.background)
-                                            .cornerRadius(8)
-                                        }
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(AppTheme.primaryGreen.opacity(0.3), lineWidth: 1)
+                                        )
                                     }
                                 }
                             }

@@ -26,27 +26,44 @@ class SettingsViewModel: ObservableObject {
     
     func deleteCategory(_ category: Category) {
         repository.deleteCategory(category)
-        categories.removeAll { $0.name == category.name }
+        // No need to update local list - the notification will handle it
+    }
+    
+    func createCategory(_ categoryName: String) {
+        let trimmedName = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+        
+        // Check if category already exists
+        if categories.contains(where: { $0.name.lowercased() == trimmedName.lowercased() }) {
+            return
+        }
+        
+        let category = Category(name: trimmedName)
+        repository.createCategory(category)
+        
+        // No need to update local list - the notification will handle it
+        // The setupNotifications() method listens for .categoryRenamed which is sent by createCategory
     }
     
     func renameCategory(_ category: Category, to newName: String) {
         guard !newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        
+
         let trimmedName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         // Check if new name already exists
         if categories.contains(where: { $0.name.lowercased() == trimmedName.lowercased() && $0.name != category.name }) {
             return
         }
-        
-        if let newCategory = repository.renameCategory(category, to: trimmedName) {
-            if let index = categories.firstIndex(where: { $0.name == category.name }) {
-                categories[index] = newCategory
-                categories.sort { $0.name < $1.name }
-            }
-        }
+
+        let _ = repository.renameCategory(category, to: trimmedName)
+        // No need to update local list - the notification will handle it
     }
-    
+
+    func clearAllData() {
+        repository.clearAllSessions()
+        loadCategories()
+    }
+
     private func setupNotifications() {
         // Listen for category changes from other parts of the app
         NotificationCenter.default.publisher(for: .categoryDeleted)

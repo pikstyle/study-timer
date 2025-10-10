@@ -18,6 +18,14 @@
 - Conservation de toutes les fonctionnalités des deux versions
 - Suppression de la duplication de code
 
+#### MVVMSessionRecordingView.swift (interface simplifiée)
+- **🎯 Interface des catégories complètement simplifiée**
+- Suppression de l'affichage confus avec catégorie sélectionnée + liste
+- Design épuré avec boutons radio visuels (cercles avec checkmark)
+- Un seul bouton "Nouvelle catégorie" adaptatif selon le contexte
+- Suppression des swipe actions complexes
+- Interface beaucoup plus claire et intuitive
+
 #### TimeFormatter.swift (nouveau)
 ```swift
 static func format(_ timeInterval: TimeInterval) -> String
@@ -72,3 +80,49 @@ Tous les fichiers ont été vérifiés pour :
 2. Exécuter les tests (si ils existent)
 3. Vérifier que toutes les fonctionnalités marchent comme attendu
 4. Considérer l'ajout de tests unitaires pour les ViewModels
+
+## 🎉 Mise à Jour : Interface Simplifiée
+
+**✅ L'affichage des catégories lors de l'enregistrement de session a été complètement simplifié !**
+
+### Avant (complexe et confus) :
+- Catégorie sélectionnée affichée séparément en haut
+- Liste de toutes les catégories en dessous (avec doublons visuels)
+- Actions de swipe compliquées
+- Bouton "Nouvelle catégorie" répété
+- Interface surchargée et peu claire
+
+### Après (simple et clair) :
+- **Liste unique** de toutes les catégories disponibles
+- **Boutons radio visuels** avec cercles et checkmarks
+- **Une seule action** par élément : tap pour sélectionner
+- **Un seul bouton** "Nouvelle catégorie" adaptatif
+- **Interface épurée** et intuitive
+
+L'utilisateur voit maintenant immédiatement toutes ses options d'un coup d'œil et peut facilement sélectionner sa catégorie d'un simple tap ! 🎯
+
+## 🆕 Nouvelle Fonctionnalité : Settings Modernes
+
+**✅ Page de réglages complètement modernisée avec interface iOS native !**
+
+### Nouvelles fonctionnalités :
+- **📱 Interface List iOS native** avec sections groupées
+- **🔄 Pull-to-refresh** pour actualiser les catégories
+- **➕ Création de catégories** directement depuis les réglages  
+- **🎨 Icônes colorées** pour chaque catégorie
+- **⚡ Actualisation automatique** quand les catégories changent
+- **🗂️ Sections organisées** : Catégories, Données, Application
+
+### Améliorations techniques :
+- **Nouveau** : `createCategory()` dans SettingsViewModel et StudyRepository
+- **Amélioration** : Synchronisation temps réel des catégories
+- **Design** : Interface native iOS avec InsetGroupedListStyle
+- **UX** : Footer informatif avec nombre de catégories
+
+### Interface utilisateur :
+- Bouton d'actualisation en haut à droite
+- Pull-to-refresh sur toute la liste
+- Sections avec headers/footers informatifs
+- Navigation vers futures fonctionnalités (export, à propos)
+
+Les catégories créées dans les réglages apparaissent **immédiatement** partout dans l'app ! 🚀

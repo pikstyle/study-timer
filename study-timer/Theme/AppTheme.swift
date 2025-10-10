@@ -110,4 +110,12 @@ struct CategoryColors {
         categoryColorMap.removeAll()
         usedColorIndices.removeAll()
     }
+
+    // Fonction pour transférer la couleur d'une ancienne catégorie vers une nouvelle lors du renommage
+    static func renameCategory(from oldName: String, to newName: String) {
+        if let hexColor = categoryColorMap[oldName] {
+            categoryColorMap[newName] = hexColor
+            categoryColorMap.removeValue(forKey: oldName)
+        }
+    }
 }

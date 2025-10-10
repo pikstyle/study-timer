@@ -48,6 +48,9 @@ class SessionRecordingViewModel: ObservableObject {
         let categoryName = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
         let category = Category(name: categoryName)
 
+        // Add to repository immediately to persist
+        repository.createCategory(category)
+
         // Add to local list
         if !availableCategories.contains(where: { $0.name == categoryName }) {
             availableCategories.append(category)
@@ -57,7 +60,6 @@ class SessionRecordingViewModel: ObservableObject {
         selectedCategory = category
         newCategoryName = ""
         showingNewCategoryAlert = false
-
     }
 
     func saveSession() -> Bool {
