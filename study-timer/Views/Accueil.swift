@@ -23,7 +23,6 @@ struct Accueil: View {
                             .foregroundColor(AppTheme.textPrimary)
                         Spacer()
                     }
-                    .padding(.horizontal, 20)
                     .padding(.top, 20)
 
                     // Today's stats

@@ -15,59 +15,75 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                // Section Background Timer
-                Section {
-                    Button {
-                        showingBackgroundInfo = true
-                    } label: {
-                        SettingsRowView(
-                            title: "Timer en arrière-plan",
-                            subtitle: "Permet au timer de continuer même quand l'app est fermée",
-                            icon: "clock.arrow.2.circlepath",
-                            iconColor: .orange
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
+            VStack(spacing: 0) {
+                // Titre personnalisé
+                HStack {
+                    Text("Réglages")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundColor(AppTheme.textPrimary)
+                    Spacer()
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 8)
+                .background(AppTheme.background)
 
-                // Section Catégories
-                Section {
-                    NavigationLink {
-                        CategoriesManagementView()
-                            .environmentObject(viewModel)
-                    } label: {
-                        SettingsRowView(
-                            title: "Catégories",
-                            subtitle: "\(viewModel.categories.count) catégorie\(viewModel.categories.count > 1 ? "s" : "")",
-                            icon: "folder.fill",
-                            iconColor: .blue
-                        )
+                List {
+                    // Section Background Timer
+                    Section {
+                        Button {
+                            showingBackgroundInfo = true
+                        } label: {
+                            SettingsRowView(
+                                title: "Timer en arrière-plan",
+                                subtitle: "Permet au timer de continuer même quand l'app est fermée",
+                                icon: "clock.arrow.2.circlepath",
+                                iconColor: .orange
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                }
 
-                // Section Données
-                Section {
-                    Button {
-                        showingDeleteConfirmation = true
-                    } label: {
-                        SettingsRowView(
-                            title: "Supprimer toutes les données",
-                            subtitle: "Efface toutes les sessions et catégories",
-                            icon: "trash.fill",
-                            iconColor: .red
-                        )
+                    // Section Catégories
+                    Section {
+                        NavigationLink {
+                            CategoriesManagementView()
+                                .environmentObject(viewModel)
+                        } label: {
+                            SettingsRowView(
+                                title: "Catégories",
+                                subtitle: "\(viewModel.categories.count) catégorie\(viewModel.categories.count > 1 ? "s" : "")",
+                                icon: "folder.fill",
+                                iconColor: .blue
+                            )
+                        }
                     }
-                    .buttonStyle(PlainButtonStyle())
-                } footer: {
-                    Text("Cette action est irréversible. Toutes vos sessions d'étude et catégories seront définitivement supprimées.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+
+                    // Section Données
+                    Section {
+                        Button {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            SettingsRowView(
+                                title: "Supprimer toutes les données",
+                                subtitle: "Efface toutes les sessions et catégories",
+                                icon: "trash.fill",
+                                iconColor: .red
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    } footer: {
+                        Text("Cette action est irréversible. Toutes vos sessions d'étude et catégories seront définitivement supprimées.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
+                .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+                .background(AppTheme.background)
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Réglages")
-            .navigationBarTitleDisplayMode(.large)
+            .background(AppTheme.background)
+            .navigationBarHidden(true)
             .sheet(isPresented: $showingBackgroundInfo) {
                 BackgroundTimerInfoView()
             }
