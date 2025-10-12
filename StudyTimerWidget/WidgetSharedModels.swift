@@ -71,26 +71,18 @@ class WidgetStudyRepository {
     private init() {}
 
     func getAllSessions() -> [WidgetStudySession] {
-        print("🔍 Widget: Trying to load sessions from App Group: \(appGroupID)")
-
         guard let sharedDefaults = sharedDefaults else {
-            print("❌ Widget: Failed to access App Group UserDefaults")
             return []
         }
 
         guard let data = sharedDefaults.data(forKey: "sessions_data") else {
-            print("⚠️ Widget: No data found for key 'sessions_data'")
             return []
         }
-
-        print("📦 Widget: Found \(data.count) bytes of session data")
 
         guard let sessions = try? JSONDecoder().decode([WidgetStudySession].self, from: data) else {
-            print("❌ Widget: Failed to decode sessions")
             return []
         }
 
-        print("✅ Widget: Successfully loaded \(sessions.count) sessions")
         return sessions.sorted { $0.date > $1.date }
     }
 

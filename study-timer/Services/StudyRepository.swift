@@ -154,22 +154,15 @@ class StudyRepository: StudyRepositoryProtocol {
     private func saveData() {
         if let encoded = try? JSONEncoder().encode(sessions) {
             sharedDefaults.set(encoded, forKey: "sessions_data")
-            print("✅ Saved \(sessions.count) sessions to App Group")
         }
         if let encoded = try? JSONEncoder().encode(Array(categories)) {
             sharedDefaults.set(encoded, forKey: "categories_data")
-            print("✅ Saved \(categories.count) categories to App Group")
         }
 
         // Force synchronisation
-        if sharedDefaults.synchronize() {
-            print("✅ UserDefaults synchronized successfully")
-        } else {
-            print("⚠️ UserDefaults synchronization might have failed")
-        }
+        sharedDefaults.synchronize()
 
         // Rafraîchir tous les widgets après la sauvegarde
-        print("🔄 Reloading all widget timelines...")
         WidgetCenter.shared.reloadAllTimelines()
 
         // Force aussi un rafraîchissement spécifique pour chaque widget
@@ -178,7 +171,6 @@ class StudyRepository: StudyRepositoryProtocol {
         WidgetCenter.shared.reloadTimelines(ofKind: "MonthSmallWidget")
         WidgetCenter.shared.reloadTimelines(ofKind: "OverviewMediumWidget")
         WidgetCenter.shared.reloadTimelines(ofKind: "DetailedLargeWidget")
-        print("✅ Widget refresh commands sent")
     }
 
     private func loadData() {
