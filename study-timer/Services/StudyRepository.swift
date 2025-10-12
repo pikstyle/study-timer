@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import WidgetKit
 
 extension Notification.Name {
     static let sessionSaved = Notification.Name("sessionSaved")
@@ -25,13 +26,17 @@ protocol StudyRepositoryProtocol {
     func createCategory(_ category: Category)
     func deleteCategory(_ category: Category)
     func renameCategory(_ oldCategory: Category, to newName: String) -> Category?
+    func updateCategory(_ category: Category)
 }
 
 class StudyRepository: StudyRepositoryProtocol {
     static let shared = StudyRepository()
 
-    @AppStorage("sessions_data") private var sessionsData: Data = Data()
-    @AppStorage("categories_data") private var categoriesData: Data = Data()
+    // IMPORTANT: App Group pour partager les données avec le widget
+    private let appGroupID = "group.com.jeune-sim.study-timer"
+    private var sharedDefaults: UserDefaults {
+        UserDefaults(suiteName: appGroupID) ?? UserDefaults.standard
+    }
 
     private var sessions: [StudySession] = []
     private var categories: Set<Category> = []
@@ -46,7 +51,11 @@ class StudyRepository: StudyRepositoryProtocol {
 
     func saveSession(_ session: StudySession) {
         sessions.append(session)
-        categories.insert(Category(name: session.categoryName))
+        // Only create a new category if it doesn't exist
+        // If it already exists, keep the existing one with its color
+        if !categories.contains(where: { $0.name == session.categoryName }) {
+            categories.insert(Category(name: session.categoryName))
+        }
         saveData()
 
         // Notify that a session was saved
@@ -63,13 +72,9 @@ class StudyRepository: StudyRepositoryProtocol {
         categories.removeAll()
 
         // Clear UserDefaults completely
-        UserDefaults.standard.removeObject(forKey: "sessions_data")
-        UserDefaults.standard.removeObject(forKey: "categories_data")
-        UserDefaults.standard.synchronize()
-
-        // Reset the @AppStorage variables to empty data
-        sessionsData = Data()
-        categoriesData = Data()
+        sharedDefaults.removeObject(forKey: "sessions_data")
+        sharedDefaults.removeObject(forKey: "categories_data")
+        sharedDefaults.synchronize()
 
         // Notify that data was cleared
         NotificationCenter.default.post(name: .dataCleared, object: nil)
@@ -105,10 +110,11 @@ class StudyRepository: StudyRepositoryProtocol {
         guard !newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
 
         let trimmedName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let newCategory = Category(name: trimmedName)
+        // Keep the same colorId when renaming
+        let newCategory = Category(name: trimmedName, colorId: oldCategory.colorId)
 
         // Check if new name already exists
-        if categories.contains(newCategory) {
+        if categories.contains(where: { $0.name == trimmedName }) {
             return nil
         }
 
@@ -128,9 +134,6 @@ class StudyRepository: StudyRepositoryProtocol {
             }
         }
 
-        // Transfer the color from old category to new category
-        CategoryColors.renameCategory(from: oldCategory.name, to: trimmedName)
-
         saveData()
 
         // Notify that a category was renamed
@@ -138,20 +141,36 @@ class StudyRepository: StudyRepositoryProtocol {
         return newCategory
     }
 
+    func updateCategory(_ category: Category) {
+        // Remove old version and insert updated version
+        categories.remove(category)
+        categories.insert(category)
+        saveData()
+
+        // Notify that a category was updated
+        NotificationCenter.default.post(name: .categoryRenamed, object: nil)
+    }
+
     private func saveData() {
         if let encoded = try? JSONEncoder().encode(sessions) {
-            sessionsData = encoded
+            sharedDefaults.set(encoded, forKey: "sessions_data")
         }
         if let encoded = try? JSONEncoder().encode(Array(categories)) {
-            categoriesData = encoded
+            sharedDefaults.set(encoded, forKey: "categories_data")
         }
+        sharedDefaults.synchronize()
+
+        // Rafraîchir tous les widgets après la sauvegarde
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func loadData() {
-        if let decoded = try? JSONDecoder().decode([StudySession].self, from: sessionsData) {
+        if let data = sharedDefaults.data(forKey: "sessions_data"),
+           let decoded = try? JSONDecoder().decode([StudySession].self, from: data) {
             sessions = decoded
         }
-        if let decoded = try? JSONDecoder().decode([Category].self, from: categoriesData) {
+        if let data = sharedDefaults.data(forKey: "categories_data"),
+           let decoded = try? JSONDecoder().decode([Category].self, from: data) {
             categories = Set(decoded)
         }
     }

@@ -12,13 +12,12 @@ struct DetailedStatsView: View {
     let period: StatsPeriod
     @StateObject private var viewModel = StatisticsViewModel()
     @Environment(\.dismiss) private var dismiss
-    @State private var showingSettings = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Boutons de navigation en haut
+                    // Bouton de navigation en haut
                     HStack {
                         Button {
                             dismiss()
@@ -32,14 +31,6 @@ struct DetailedStatsView: View {
                         }
 
                         Spacer()
-
-                        Button {
-                            showingSettings = true
-                        } label: {
-                            Image(systemName: "gearshape.fill")
-                                .foregroundColor(AppTheme.primaryGreen)
-                                .font(.system(size: 20))
-                        }
                     }
                     .padding(.horizontal, 20)
 
@@ -49,12 +40,12 @@ struct DetailedStatsView: View {
                         HStack(spacing: 12) {
                             ZStack {
                                 Circle()
-                                    .fill(period.accentColor.opacity(0.15))
+                                    .fill(period.accentColor.opacity(0.15) as Color)
                                     .frame(width: 56, height: 56)
 
                                 Image(systemName: period.icon)
                                     .font(.system(size: 26))
-                                    .foregroundColor(period.accentColor)
+                                    .foregroundColor(AppTheme.textPrimary)
                             }
 
                             VStack(alignment: .leading, spacing: 4) {
@@ -81,7 +72,7 @@ struct DetailedStatsView: View {
 
                             Text(TimeFormatter.format(TimeInterval(totalTime)))
                                 .font(.system(size: 48, weight: .bold, design: .rounded))
-                                .foregroundColor(period.accentColor)
+                                .foregroundColor(AppTheme.textPrimary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -121,88 +112,19 @@ struct DetailedStatsView: View {
                             }
                         }
                     }
-                    .padding(24)
-                    .background(AppTheme.cardBackground)
-                    .cornerRadius(24)
-                    .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 4)
+                    .glassCard()
                     .padding(.horizontal, 20)
 
                     // Timeline Chart
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Image(systemName: "chart.xyaxis.line")
-                                .foregroundColor(period.accentColor)
-                            Text("Évolution temporelle")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(AppTheme.textPrimary)
-                        }
-
-                        if timelineData.isEmpty {
-                            VStack(spacing: 12) {
-                                Image(systemName: "chart.line.uptrend.xyaxis")
-                                    .font(.system(size: 48))
-                                    .foregroundColor(AppTheme.textSecondary.opacity(0.3))
-
-                                Text("Pas assez de données")
-                                    .font(.subheadline)
-                                    .foregroundColor(AppTheme.textSecondary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 200)
-                        } else {
-                            Chart(timelineData) { dataPoint in
-                                LineMark(
-                                    x: .value("Période", dataPoint.period),
-                                    y: .value("Temps", dataPoint.totalTime / 60) // En minutes
-                                )
-                                .foregroundStyle(period.accentColor)
-                                .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
-
-                                PointMark(
-                                    x: .value("Période", dataPoint.period),
-                                    y: .value("Temps", dataPoint.totalTime / 60)
-                                )
-                                .foregroundStyle(period.accentColor)
-                                .symbolSize(50)
-                            }
-                            .frame(height: 200)
-                            .chartXAxis {
-                                AxisMarks(values: .automatic) { _ in
-                                    AxisGridLine()
-                                    AxisTick()
-                                    AxisValueLabel()
-                                        .foregroundStyle(AppTheme.textSecondary)
-                                }
-                            }
-                            .chartYAxis {
-                                AxisMarks(position: .leading) { value in
-                                    AxisGridLine()
-                                    AxisTick()
-                                    AxisValueLabel {
-                                        if let minutes = value.as(Double.self) {
-                                            Text(ChartFormatter.formatMinutes(minutes))
-                                                .foregroundStyle(AppTheme.textSecondary)
-                                        }
-                                    }
-                                }
-                            }
-                            .chartPlotStyle { plotArea in
-                                plotArea.background(AppTheme.background.opacity(0.3))
-                            }
-                        }
-                    }
-                    .padding(24)
-                    .background(AppTheme.cardBackground)
-                    .cornerRadius(24)
-                    .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 4)
-                    .padding(.horizontal, 20)
+                    timelineChartView
+                        .glassCard()
+                        .padding(.horizontal, 20)
 
                     // Sessions list
                     VStack(alignment: .leading, spacing: 16) {
                         HStack {
                             Image(systemName: "list.bullet")
-                                .foregroundColor(period.accentColor)
+                                .foregroundColor(AppTheme.textPrimary)
                             Text("Sessions")
                                 .font(.title2)
                                 .fontWeight(.bold)
@@ -233,10 +155,7 @@ struct DetailedStatsView: View {
                             }
                         }
                     }
-                    .padding(24)
-                    .background(AppTheme.cardBackground)
-                    .cornerRadius(24)
-                    .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 4)
+                    .glassCard()
                     .padding(.horizontal, 20)
 
                     Spacer()
@@ -244,10 +163,10 @@ struct DetailedStatsView: View {
                 .padding(.top, 20)
                 .padding(.bottom, 30)
             }
-            .background(AppTheme.background)
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
-            }
+            .background(
+                AppTheme.backgroundView()
+            )
+            .grainEffect()
         }
     }
 
@@ -266,6 +185,71 @@ struct DetailedStatsView: View {
     private var timelineData: [TimelineDataPoint] {
         viewModel.timelineData(for: period)
     }
+
+    @ViewBuilder
+    private var timelineChartView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "chart.xyaxis.line")
+                    .foregroundColor(AppTheme.textPrimary)
+                Text("Évolution temporelle")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(AppTheme.textPrimary)
+            }
+
+            if timelineData.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 48))
+                        .foregroundColor(AppTheme.textSecondary.opacity(0.3))
+
+                    Text("Pas assez de données")
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 200)
+            } else {
+                Chart(timelineData) { dataPoint in
+                    LineMark(
+                        x: .value("Période", dataPoint.period),
+                        y: .value("Temps", dataPoint.totalTime / 60)
+                    )
+                    .foregroundStyle(period.accentColor)
+                    .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+
+                    PointMark(
+                        x: .value("Période", dataPoint.period),
+                        y: .value("Temps", dataPoint.totalTime / 60)
+                    )
+                    .foregroundStyle(period.accentColor)
+                    .symbolSize(50)
+                }
+                .frame(height: 200)
+                .chartXAxis {
+                    AxisMarks(values: .automatic) { _ in
+                        AxisGridLine()
+                        AxisTick()
+                        AxisValueLabel()
+                            .foregroundStyle(AppTheme.textSecondary)
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading) { value in
+                        AxisGridLine()
+                        AxisTick()
+                        AxisValueLabel {
+                            if let minutes = value.as(Double.self) {
+                                Text(ChartFormatter.formatMinutes(minutes))
+                                    .foregroundStyle(AppTheme.textSecondary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 struct SessionRowView: View {
@@ -276,7 +260,7 @@ struct SessionRowView: View {
         HStack(spacing: 16) {
             // Indicateur de catégorie
             Circle()
-                .fill(CategoryColors.color(for: session.categoryName))
+                .fill(CategoryColors.color(for: session.categoryName) as Color)
                 .frame(width: 12, height: 12)
 
             // Informations de la session
@@ -292,7 +276,7 @@ struct SessionRowView: View {
                     Text(session.formattedDuration)
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .foregroundColor(accentColor)
+                        .foregroundColor(AppTheme.textPrimary)
                 }
 
                 Text(formatDate(session.date))
@@ -302,8 +286,12 @@ struct SessionRowView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(AppTheme.background)
+        .background(Color.black.opacity(0.4))
         .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+        )
     }
 
     private func formatDate(_ date: Date) -> String {
@@ -333,7 +321,7 @@ struct StatBadge: View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundColor(color)
+                .foregroundColor(AppTheme.textPrimary)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
@@ -348,8 +336,12 @@ struct StatBadge: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(AppTheme.background)
+        .background(Color.black.opacity(0.3))
         .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+        )
     }
 }
 

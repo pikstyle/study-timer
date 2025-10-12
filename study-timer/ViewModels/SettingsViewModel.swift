@@ -59,6 +59,13 @@ class SettingsViewModel: ObservableObject {
         // No need to update local list - the notification will handle it
     }
 
+    func updateCategoryColor(_ category: Category, colorId: String) {
+        var updatedCategory = category
+        updatedCategory.colorId = colorId
+        repository.updateCategory(updatedCategory)
+        loadCategories()
+    }
+
     func clearAllData() {
         repository.clearAllSessions()
         loadCategories()

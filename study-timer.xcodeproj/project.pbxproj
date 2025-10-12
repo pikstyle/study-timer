@@ -6,14 +6,66 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		F4CA780F2E9C2AA400682B55 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4CA780E2E9C2AA400682B55 /* WidgetKit.framework */; };
+		F4CA78112E9C2AA400682B55 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F4CA78102E9C2AA400682B55 /* SwiftUI.framework */; };
+		F4CA78202E9C2AA500682B55 /* StudyTimerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F4CA780C2E9C2AA400682B55 /* StudyTimerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F4CA781E2E9C2AA500682B55 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F462C4B72E885A18006551C4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F4CA780B2E9C2AA400682B55;
+			remoteInfo = StudyTimerWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F4CA78212E9C2AA500682B55 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F4CA78202E9C2AA500682B55 /* StudyTimerWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		F462C4BF2E885A18006551C4 /* study-timer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "study-timer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F4CA780C2E9C2AA400682B55 /* StudyTimerWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = StudyTimerWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F4CA780E2E9C2AA400682B55 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		F4CA78102E9C2AA400682B55 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		F4CA78362E9C2BFA00682B55 /* StudyTimerWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StudyTimerWidgetExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F4CA78372E9C2C8E00682B55 /* Exceptions for "StudyTimerWidget" folder in "StudyTimerWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = F4CA780B2E9C2AA400682B55 /* StudyTimerWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F462C4C12E885A18006551C4 /* study-timer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "study-timer";
+			sourceTree = "<group>";
+		};
+		F4CA78122E9C2AA400682B55 /* StudyTimerWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F4CA78372E9C2C8E00682B55 /* Exceptions for "StudyTimerWidget" folder in "StudyTimerWidgetExtension" target */,
+			);
+			path = StudyTimerWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -26,13 +78,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F4CA78092E9C2AA400682B55 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F4CA78112E9C2AA400682B55 /* SwiftUI.framework in Frameworks */,
+				F4CA780F2E9C2AA400682B55 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		F462C4B62E885A18006551C4 = {
 			isa = PBXGroup;
 			children = (
+				F4CA78362E9C2BFA00682B55 /* StudyTimerWidgetExtension.entitlements */,
 				F462C4C12E885A18006551C4 /* study-timer */,
+				F4CA78122E9C2AA400682B55 /* StudyTimerWidget */,
+				F4CA780D2E9C2AA400682B55 /* Frameworks */,
 				F462C4C02E885A18006551C4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +105,18 @@
 			isa = PBXGroup;
 			children = (
 				F462C4BF2E885A18006551C4 /* study-timer.app */,
+				F4CA780C2E9C2AA400682B55 /* StudyTimerWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		F4CA780D2E9C2AA400682B55 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F4CA780E2E9C2AA400682B55 /* WidgetKit.framework */,
+				F4CA78102E9C2AA400682B55 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -55,10 +129,12 @@
 				F462C4BB2E885A18006551C4 /* Sources */,
 				F462C4BC2E885A18006551C4 /* Frameworks */,
 				F462C4BD2E885A18006551C4 /* Resources */,
+				F4CA78212E9C2AA500682B55 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F4CA781F2E9C2AA500682B55 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				F462C4C12E885A18006551C4 /* study-timer */,
@@ -69,6 +145,28 @@
 			productName = "study-timer";
 			productReference = F462C4BF2E885A18006551C4 /* study-timer.app */;
 			productType = "com.apple.product-type.application";
+		};
+		F4CA780B2E9C2AA400682B55 /* StudyTimerWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F4CA78252E9C2AA500682B55 /* Build configuration list for PBXNativeTarget "StudyTimerWidgetExtension" */;
+			buildPhases = (
+				F4CA78082E9C2AA400682B55 /* Sources */,
+				F4CA78092E9C2AA400682B55 /* Frameworks */,
+				F4CA780A2E9C2AA400682B55 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F4CA78122E9C2AA400682B55 /* StudyTimerWidget */,
+			);
+			name = StudyTimerWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = StudyTimerWidgetExtension;
+			productReference = F4CA780C2E9C2AA400682B55 /* StudyTimerWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -81,6 +179,9 @@
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					F462C4BE2E885A18006551C4 = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
+					F4CA780B2E9C2AA400682B55 = {
 						CreatedOnToolsVersion = 26.0.1;
 					};
 				};
@@ -100,12 +201,20 @@
 			projectRoot = "";
 			targets = (
 				F462C4BE2E885A18006551C4 /* study-timer */,
+				F4CA780B2E9C2AA400682B55 /* StudyTimerWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		F462C4BD2E885A18006551C4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F4CA780A2E9C2AA400682B55 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +231,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F4CA78082E9C2AA400682B55 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F4CA781F2E9C2AA500682B55 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F4CA780B2E9C2AA400682B55 /* StudyTimerWidgetExtension */;
+			targetProxy = F4CA781E2E9C2AA500682B55 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F462C4CA2E885A19006551C4 /* Debug */ = {
@@ -251,6 +375,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "study-timer/study-timer.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = M23F32HG62;
@@ -283,6 +408,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "study-timer/study-timer.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = M23F32HG62;
@@ -310,6 +436,68 @@
 			};
 			name = Release;
 		};
+		F4CA78222E9C2AA500682B55 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = StudyTimerWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = M23F32HG62;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = StudyTimerWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = StudyTimerWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.jeune-sim.study-timer.StudyTimerWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F4CA78232E9C2AA500682B55 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = StudyTimerWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = M23F32HG62;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = StudyTimerWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = StudyTimerWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.jeune-sim.study-timer.StudyTimerWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -327,6 +515,15 @@
 			buildConfigurations = (
 				F462C4CD2E885A19006551C4 /* Debug */,
 				F462C4CE2E885A19006551C4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F4CA78252E9C2AA500682B55 /* Build configuration list for PBXNativeTarget "StudyTimerWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F4CA78222E9C2AA500682B55 /* Debug */,
+				F4CA78232E9C2AA500682B55 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

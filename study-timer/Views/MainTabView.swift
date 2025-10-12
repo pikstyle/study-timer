@@ -8,9 +8,26 @@
 import SwiftUI
 
 struct MainTabView: View {
+    init() {
+        // Configuration de la TabBar pour transparence sans arrière-plan vert
+        let appearance = UITabBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundColor = UIColor.clear
+
+        // Couleurs des items
+        appearance.stackedLayoutAppearance.normal.iconColor = UIColor.white.withAlphaComponent(0.5)
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor.white.withAlphaComponent(0.5)]
+
+        appearance.stackedLayoutAppearance.selected.iconColor = UIColor.white
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: UIColor.white]
+
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+
     var body: some View {
         ZStack {
-            AppTheme.background.ignoresSafeArea()
+            AppTheme.backgroundView()
 
             TabView {
                 Accueil()
@@ -28,7 +45,6 @@ struct MainTabView: View {
                         Label("Réglages", systemImage: "gearshape.fill")
                     }
             }
-            .accentColor(AppTheme.primaryGreen)
         }
         .preferredColorScheme(.dark)
     }

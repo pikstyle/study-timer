@@ -32,6 +32,10 @@ class TimerViewModel: ObservableObject {
         seconds > 0
     }
 
+    var hasActiveSession: Bool {
+        seconds > 0
+    }
+
     func startTimer() {
         guard !isRunning else { return }
         isRunning = true

@@ -332,6 +332,15 @@ struct TimelineDataPoint: Identifiable {
     let date: Date?         // Pour référence si nécessaire
 }
 
+struct CategoryStats: Identifiable {
+    let id = UUID()
+    let category: Category
+    let totalTime: TimeInterval
+    let todayTime: TimeInterval
+    let weekTime: TimeInterval
+    let monthTime: TimeInterval
+}
+
 // MARK: - Sessions Data
 extension StatisticsViewModel {
     var todaySessions: [StudySession] {
@@ -456,5 +465,42 @@ extension StatisticsViewModel {
         }
         
         return dataPoints
+    }
+}
+
+// MARK: - Category Statistics
+extension StatisticsViewModel {
+    var categoriesWithStats: [CategoryStats] {
+        let categories = repository.getAllCategories()
+        let allSessions = repository.getAllSessions()
+
+        return categories.compactMap { category in
+            let categorySessions = allSessions.filter { $0.categoryName == category.name }
+
+            // Si aucune session pour cette catégorie, on la retourne quand même avec 0
+            let totalTime = categorySessions.reduce(0) { $0 + $1.duration }
+
+            let todayTime = categorySessions
+                .filter { $0.isToday }
+                .reduce(0) { $0 + $1.duration }
+
+            let weekTime = categorySessions
+                .filter { $0.isThisWeek }
+                .reduce(0) { $0 + $1.duration }
+
+            let monthTime = categorySessions
+                .filter { $0.isThisMonth }
+                .reduce(0) { $0 + $1.duration }
+
+            return CategoryStats(
+                category: category,
+                totalTime: totalTime,
+                todayTime: todayTime,
+                weekTime: weekTime,
+                monthTime: monthTime
+            )
+        }
+        .filter { $0.totalTime > 0 } // Ne montrer que les catégories avec du temps enregistré
+        .sorted { $0.totalTime > $1.totalTime } // Trier par temps total décroissant
     }
 }

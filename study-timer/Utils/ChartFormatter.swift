@@ -16,7 +16,7 @@ struct ChartFormatter {
             return "\(totalMinutes)min"
         } else {
             let hours = totalMinutes / 60
-            let remainingMinutes = totalMinutes % 60
+            let     remainingMinutes = totalMinutes % 60
             
             if remainingMinutes == 0 {
                 return "\(hours)h"

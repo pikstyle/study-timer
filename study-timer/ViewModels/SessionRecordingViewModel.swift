@@ -14,6 +14,7 @@ class SessionRecordingViewModel: ObservableObject {
     @Published var availableCategories: [Category] = []
     @Published var showingNewCategoryAlert = false
     @Published var newCategoryName = ""
+    @Published var newCategoryColorId = "pink"
 
     let sessionDuration: TimeInterval
     private let repository: StudyRepositoryProtocol
@@ -46,7 +47,7 @@ class SessionRecordingViewModel: ObservableObject {
         guard !newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         let categoryName = newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let category = Category(name: categoryName)
+        let category = Category(name: categoryName, colorId: newCategoryColorId)
 
         // Add to repository immediately to persist
         repository.createCategory(category)
@@ -59,6 +60,7 @@ class SessionRecordingViewModel: ObservableObject {
 
         selectedCategory = category
         newCategoryName = ""
+        newCategoryColorId = "pink" // Reset to default
         showingNewCategoryAlert = false
     }
 

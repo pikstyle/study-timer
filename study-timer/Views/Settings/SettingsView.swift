@@ -10,7 +10,6 @@ import SwiftUI
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @Environment(\.dismiss) private var dismiss
-    @State private var showingBackgroundInfo = false
     @State private var showingDeleteConfirmation = false
 
     var body: some View {
@@ -26,24 +25,8 @@ struct SettingsView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
                 .padding(.bottom, 8)
-                .background(AppTheme.background)
 
                 List {
-                    // Section Background Timer
-                    Section {
-                        Button {
-                            showingBackgroundInfo = true
-                        } label: {
-                            SettingsRowView(
-                                title: "Timer en arrière-plan",
-                                subtitle: "Permet au timer de continuer même quand l'app est fermée",
-                                icon: "clock.arrow.2.circlepath",
-                                iconColor: .orange
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-
                     // Section Catégories
                     Section {
                         NavigationLink {
@@ -75,18 +58,17 @@ struct SettingsView: View {
                     } footer: {
                         Text("Cette action est irréversible. Toutes vos sessions d'étude et catégories seront définitivement supprimées.")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textLabel)
                     }
                 }
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
-                .background(AppTheme.background)
             }
-            .background(AppTheme.background)
+            .background(
+                AppTheme.backgroundView()
+            )
+            .grainEffect()
             .navigationBarHidden(true)
-            .sheet(isPresented: $showingBackgroundInfo) {
-                BackgroundTimerInfoView()
-            }
             .alert("Supprimer toutes les données ?", isPresented: $showingDeleteConfirmation) {
                 Button("Annuler", role: .cancel) { }
                 Button("Supprimer", role: .destructive) {
@@ -130,12 +112,12 @@ struct SettingsRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.body)
-                    .foregroundColor(.primary)
+                    .foregroundColor(AppTheme.textPrimary)
                 
                 if let subtitle = subtitle {
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textLabel)
                 }
             }
             
@@ -169,9 +151,9 @@ struct CategoriesManagementView: View {
                 } label: {
                     HStack {
                         Image(systemName: "plus.circle.fill")
-                            .foregroundColor(.blue)
+                            .foregroundColor(AppTheme.accentPrimary)
                         Text("Ajouter une catégorie")
-                            .foregroundColor(.blue)
+                            .foregroundColor(AppTheme.accentPrimary)
                     }
                 }
                 
@@ -213,41 +195,34 @@ struct CategoryRowView: View {
     let category: Category
     let onRename: (String) -> Void
     let onDelete: () -> Void
-    
+    @EnvironmentObject private var viewModel: SettingsViewModel
+
     @State private var showingRenameAlert = false
     @State private var newName = ""
-    
+
     var body: some View {
-        HStack {
-            // Icône de catégorie avec couleur
-            RoundedRectangle(cornerRadius: 6)
-                .fill(CategoryColors.color(for: category.name))
-                .frame(width: 28, height: 28)
-                .overlay {
-                    Image(systemName: "folder.fill")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white)
+        NavigationLink(destination: CategoryEditView(category: category, viewModel: viewModel)) {
+            HStack {
+                // Icône de catégorie avec couleur
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(PastelColors.color(for: category.colorId))
+                    .frame(width: 28, height: 28)
+                    .overlay {
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white)
+                    }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(category.name)
+                        .font(.body)
+                        .foregroundColor(AppTheme.textPrimary)
                 }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(category.name)
-                    .font(.body)
-                    .foregroundColor(.primary)
+
+                Spacer()
             }
-            
-            Spacer()
-            
-            Button {
-                newName = category.name
-                showingRenameAlert = true
-            } label: {
-                Text("Renommer")
-                    .font(.caption)
-                    .foregroundColor(.blue)
-            }
-            .buttonStyle(PlainButtonStyle())
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 4)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
                 onDelete()
@@ -256,16 +231,159 @@ struct CategoryRowView: View {
             }
             .tint(.red)
         }
-        .alert("Renommer la catégorie", isPresented: $showingRenameAlert) {
-            TextField("Nouveau nom", text: $newName)
-            Button("Renommer") {
-                onRename(newName)
+    }
+}
+
+// Vue dédiée pour éditer une catégorie
+struct CategoryEditView: View {
+    let category: Category
+    @ObservedObject var viewModel: SettingsViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var categoryName: String
+    @State private var selectedColorId: String
+    @State private var showingDeleteConfirmation = false
+
+    init(category: Category, viewModel: SettingsViewModel) {
+        self.category = category
+        self.viewModel = viewModel
+        self._categoryName = State(initialValue: category.name)
+        self._selectedColorId = State(initialValue: category.colorId)
+    }
+
+    var body: some View {
+        List {
+            Section {
+                // Nom
+                HStack {
+                    Text("Nom")
+                        .foregroundColor(AppTheme.textPrimary)
+                    Spacer()
+                    TextField("Nom de la catégorie", text: $categoryName)
+                        .multilineTextAlignment(.trailing)
+                        .foregroundColor(AppTheme.textLabel)
+                }
             }
-            .disabled(newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            Button("Annuler", role: .cancel) { }
-        } message: {
-            Text("Entrez le nouveau nom de la catégorie")
+
+            Section {
+                // Couleur - Navigation vers une vue dédiée
+                NavigationLink {
+                    CategoryColorSelectionView(selectedColorId: $selectedColorId)
+                } label: {
+                    HStack {
+                        Text("Couleur")
+                            .foregroundColor(AppTheme.textPrimary)
+
+                        Spacer()
+
+                        // Preview de la couleur
+                        Circle()
+                            .fill(PastelColors.color(for: selectedColorId))
+                            .frame(width: 24, height: 24)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                    }
+                }
+            }
+
+            Section {
+                Button(role: .destructive) {
+                    showingDeleteConfirmation = true
+                } label: {
+                    HStack {
+                        Spacer()
+                        Text("Supprimer la catégorie")
+                        Spacer()
+                    }
+                }
+            }
         }
+        .navigationTitle("Modifier")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Enregistrer") {
+                    saveChanges()
+                }
+                .disabled(categoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .alert("Supprimer la catégorie ?", isPresented: $showingDeleteConfirmation) {
+            Button("Annuler", role: .cancel) { }
+            Button("Supprimer", role: .destructive) {
+                viewModel.deleteCategory(category)
+                dismiss()
+            }
+        } message: {
+            Text("Cette action est irréversible. Toutes les sessions associées à cette catégorie seront également supprimées.")
+        }
+    }
+
+    private func saveChanges() {
+        let trimmedName = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+
+        // Update name if changed
+        if trimmedName != category.name {
+            viewModel.renameCategory(category, to: trimmedName)
+        }
+
+        // Update color if changed
+        if selectedColorId != category.colorId {
+            var updatedCategory = category
+            updatedCategory.colorId = selectedColorId
+            viewModel.updateCategoryColor(updatedCategory, colorId: selectedColorId)
+        }
+
+        dismiss()
+    }
+}
+
+// Vue dédiée pour sélectionner une couleur
+struct CategoryColorSelectionView: View {
+    @Binding var selectedColorId: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 24) {
+            // Grille de couleurs
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 20),
+                GridItem(.flexible(), spacing: 20)
+            ], spacing: 20) {
+                ForEach(PastelColors.all) { pastelColor in
+                    Button {
+                        selectedColorId = pastelColor.id
+                        dismiss()
+                    } label: {
+                        Circle()
+                            .fill(pastelColor.color)
+                            .frame(width: 70, height: 70)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white, lineWidth: selectedColorId == pastelColor.id ? 3 : 0)
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(AppTheme.primaryGreen, lineWidth: selectedColorId == pastelColor.id ? 2 : 0)
+                                    .padding(-3)
+                            )
+                            .shadow(color: pastelColor.color.opacity(0.4), radius: selectedColorId == pastelColor.id ? 12 : 6)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.horizontal, 40)
+            .padding(.top, 40)
+
+            Spacer()
+        }
+        .background(AppTheme.backgroundView())
+        .grainEffect()
+        .navigationTitle("Choisir une couleur")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -293,7 +411,7 @@ struct BackgroundTimerInfoView: View {
                         
                         Text("Continuez à étudier même quand l'app est fermée")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textLabel)
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
@@ -341,7 +459,7 @@ struct BackgroundTimerInfoView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(spacing: 12) {
                                 Image(systemName: "bell.badge")
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(AppTheme.accentPrimary)
                                     .frame(width: 20)
                                 Text("Notifications")
                                     .fontWeight(.medium)
@@ -353,7 +471,7 @@ struct BackgroundTimerInfoView: View {
                             
                             Text("Les notifications sont automatiquement demandées au premier démarrage du timer.")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.textLabel)
                         }
                         .padding()
                         .background(Color.secondary.opacity(0.1))
@@ -371,7 +489,7 @@ struct BackgroundTimerInfoView: View {
                             
                             Text("Pour une expérience optimale, activez l'actualisation en arrière-plan dans Réglages > Général > Actualisation en arrière-plan > Study Timer")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.textLabel)
                             
                             Button("Ouvrir les Réglages") {
                                 if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
@@ -379,7 +497,7 @@ struct BackgroundTimerInfoView: View {
                                 }
                             }
                             .font(.caption)
-                            .foregroundColor(.blue)
+                            .foregroundColor(AppTheme.accentPrimary)
                         }
                         .padding()
                         .background(Color.secondary.opacity(0.1))
@@ -422,7 +540,7 @@ struct FeatureRow: View {
                 
                 Text(description)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.textLabel)
             }
             
             Spacer()

@@ -15,7 +15,7 @@ struct TimerView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AppTheme.background.ignoresSafeArea()
+                AppTheme.backgroundView()
 
                 VStack(spacing: 32) {
                     // Titre personnalisé
@@ -38,24 +38,25 @@ struct TimerView: View {
                             .foregroundColor(AppTheme.textSecondary)
                             .tracking(2)
 
-                        // Timer text centré sans cercle
+                        // Timer text centré
                         VStack(spacing: 12) {
                             Text(viewModel.timeString)
-                                .font(.system(size: 64, weight: .bold, design: .rounded))
+                                .font(.system(size: 72, weight: .bold, design: .rounded))
                                 .foregroundColor(AppTheme.textPrimary)
                                 .monospacedDigit()
 
                             if viewModel.isRunning {
                                 HStack(spacing: 4) {
                                     Circle()
-                                        .fill(AppTheme.primaryGreen)
+                                        .fill(AppTheme.brightGreen)
                                         .frame(width: 8, height: 8)
+                                        .glowEffect(color: AppTheme.brightGreen, radius: 4)
                                         .scaleEffect(viewModel.isRunning ? 1.0 : 0.5)
                                         .animation(.easeInOut(duration: 0.8).repeatForever(), value: viewModel.isRunning)
 
                                     Text("En cours")
                                         .font(.subheadline)
-                                        .foregroundColor(AppTheme.primaryGreen)
+                                        .foregroundColor(AppTheme.lightGreen)
                                 }
                             }
                         }
@@ -68,12 +69,10 @@ struct TimerView: View {
                         HStack(spacing: 16) {
                             // Start/Pause Button
                             Button {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    if viewModel.isRunning {
-                                        viewModel.stopTimer()
-                                    } else {
-                                        viewModel.startTimer()
-                                    }
+                                if viewModel.isRunning {
+                                    viewModel.stopTimer()
+                                } else {
+                                    viewModel.startTimer()
                                 }
                             } label: {
                                 VStack(spacing: 12) {
@@ -81,10 +80,12 @@ struct TimerView: View {
                                         Circle()
                                             .fill(viewModel.isRunning ? Color(hex: "FF453A") : AppTheme.primaryGreen)
                                             .frame(width: 64, height: 64)
+                                            .animation(.easeInOut(duration: 0.3), value: viewModel.isRunning)
 
                                         Image(systemName: viewModel.isRunning ? "pause.fill" : "play.fill")
                                             .font(.system(size: 28))
                                             .foregroundColor(.white)
+                                            .animation(.easeInOut(duration: 0.3), value: viewModel.isRunning)
                                     }
 
                                     Text(viewModel.isRunning ? "Pause" : "Démarrer")
@@ -93,16 +94,15 @@ struct TimerView: View {
                                         .foregroundColor(AppTheme.textPrimary)
                                 }
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 20)
-                            .background(AppTheme.cardBackground)
-                            .cornerRadius(20)
+                            .glassControlButton(
+                                accentColor: viewModel.isRunning ? Color(hex: "FF453A") : AppTheme.primaryGreen,
+                                isActive: true
+                            )
+                            .animation(.easeInOut(duration: 0.3), value: viewModel.isRunning)
 
                             // Reset Button
                             Button {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    viewModel.resetTimer()
-                                }
+                                viewModel.resetTimer()
                             } label: {
                                 VStack(spacing: 12) {
                                     ZStack {
@@ -121,10 +121,11 @@ struct TimerView: View {
                                         .foregroundColor(AppTheme.textPrimary)
                                 }
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 20)
-                            .background(AppTheme.cardBackground)
-                            .cornerRadius(20)
+                            .disabled(!viewModel.hasActiveSession)
+                            .glassControlButton(
+                                accentColor: Color(hex: "0A84FF"),
+                                isActive: true
+                            )
                         }
 
                         // Save Button
@@ -136,24 +137,15 @@ struct TimerView: View {
                                     .font(.system(size: 24))
 
                                 Text("Enregistrer la session")
-                                    .font(.headline)
                             }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 18)
-                            .background(
-                                viewModel.canSaveSession
-                                    ? AppTheme.greenGradient
-                                    : LinearGradient(colors: [Color.gray.opacity(0.5)], startPoint: .leading, endPoint: .trailing)
-                            )
-                            .cornerRadius(16)
                         }
                         .disabled(!viewModel.canSaveSession)
-                        .opacity(viewModel.canSaveSession ? 1.0 : 0.5)
+                        .primaryButtonStyle(isEnabled: viewModel.canSaveSession)
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 40)
                 }
+                .grainEffect()
             }
             .navigationBarHidden(true)
         }

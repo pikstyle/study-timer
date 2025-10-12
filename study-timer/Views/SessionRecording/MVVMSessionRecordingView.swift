@@ -24,7 +24,7 @@ struct MVVMSessionRecordingView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AppTheme.background.ignoresSafeArea()
+                AppTheme.backgroundView()
 
                 ScrollView {
                     VStack(spacing: 28) {
@@ -73,7 +73,7 @@ struct MVVMSessionRecordingView: View {
                             }
 
                             Divider()
-                                .background(AppTheme.divider)
+                                .background(AppTheme.darkGreen.opacity(0.3))
 
                             // Category Selection - Version Simplifiée
                             VStack(alignment: .leading, spacing: 12) {
@@ -94,39 +94,50 @@ struct MVVMSessionRecordingView: View {
                                         Button {
                                             viewModel.selectCategory(category)
                                         } label: {
-                                            HStack {
+                                            HStack(spacing: 12) {
+                                                // Couleur de la catégorie
                                                 Circle()
-                                                    .fill(viewModel.selectedCategory?.name == category.name ? AppTheme.primaryGreen : Color.clear)
-                                                    .stroke(AppTheme.primaryGreen, lineWidth: 2)
-                                                    .frame(width: 20, height: 20)
-                                                    .overlay {
-                                                        if viewModel.selectedCategory?.name == category.name {
-                                                            Image(systemName: "checkmark")
-                                                                .font(.system(size: 12, weight: .bold))
-                                                                .foregroundColor(.white)
-                                                        }
-                                                    }
-                                                
+                                                    .fill(PastelColors.color(for: category.colorId))
+                                                    .frame(width: 32, height: 32)
+                                                    .overlay(
+                                                        Circle()
+                                                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                                    )
+
                                                 Text(category.name)
                                                     .foregroundColor(AppTheme.textPrimary)
                                                     .fontWeight(.medium)
-                                                
+
                                                 Spacer()
+
+                                                // Indicateur de sélection
+                                                if viewModel.selectedCategory?.name == category.name {
+                                                    Image(systemName: "checkmark.circle.fill")
+                                                        .foregroundColor(AppTheme.primaryGreen)
+                                                        .font(.system(size: 20))
+                                                }
                                             }
                                             .padding(16)
                                             .background(
-                                                viewModel.selectedCategory?.name == category.name 
+                                                viewModel.selectedCategory?.name == category.name
                                                     ? AppTheme.primaryGreen.opacity(0.1)
                                                     : AppTheme.cardBackground
                                             )
                                             .cornerRadius(12)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(
+                                                        viewModel.selectedCategory?.name == category.name
+                                                            ? AppTheme.primaryGreen.opacity(0.3)
+                                                            : Color.clear,
+                                                        lineWidth: 1
+                                                    )
+                                            )
                                         }
                                     }
                                     
                                     // Bouton simple pour ajouter une catégorie
-                                    Button {
-                                        viewModel.showNewCategoryAlert()
-                                    } label: {
+                                    NavigationLink(destination: NewCategoryView(viewModel: viewModel)) {
                                         HStack {
                                             Image(systemName: "plus.circle.fill")
                                                 .foregroundColor(AppTheme.primaryGreen)
@@ -134,6 +145,9 @@ struct MVVMSessionRecordingView: View {
                                                 .fontWeight(.medium)
                                                 .foregroundColor(AppTheme.primaryGreen)
                                             Spacer()
+                                            Image(systemName: "chevron.right")
+                                                .font(.caption)
+                                                .foregroundColor(AppTheme.textSecondary)
                                         }
                                         .padding(16)
                                         .background(AppTheme.cardBackground)
@@ -143,13 +157,11 @@ struct MVVMSessionRecordingView: View {
                                                 .stroke(AppTheme.primaryGreen.opacity(0.3), lineWidth: 1)
                                         )
                                     }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
                             }
                         }
-                        .padding(20)
-                        .background(AppTheme.cardBackground)
-                        .cornerRadius(20)
-                        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 4)
+                        .glassCard(cornerRadius: 20, padding: 20)
                         .padding(.horizontal, 20)
 
                         Spacer()
@@ -165,27 +177,18 @@ struct MVVMSessionRecordingView: View {
                                     .font(.system(size: 20))
 
                                 Text("Enregistrer la session")
-                                    .font(.headline)
                             }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 18)
-                            .background(
-                                viewModel.canSaveSession
-                                    ? AppTheme.greenGradient
-                                    : LinearGradient(colors: [Color.gray.opacity(0.5)], startPoint: .leading, endPoint: .trailing)
-                            )
-                            .cornerRadius(16)
                         }
                         .disabled(!viewModel.canSaveSession)
-                        .opacity(viewModel.canSaveSession ? 1.0 : 0.5)
+                        .primaryButtonStyle(isEnabled: viewModel.canSaveSession)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 30)
                     }
                 }
+                .grainEffect()
             }
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(AppTheme.background, for: .navigationBar)
+            .toolbarBackground(.clear, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -202,18 +205,100 @@ struct MVVMSessionRecordingView: View {
                 }
             }
         }
-        .alert("Nouvelle catégorie", isPresented: $viewModel.showingNewCategoryAlert) {
-            TextField("Nom de la catégorie", text: $viewModel.newCategoryName)
-            Button("Créer") {
-                viewModel.createNewCategory()
+    }
+}
+
+// Vue dédiée pour créer une nouvelle catégorie avec choix de couleur
+struct NewCategoryView: View {
+    @ObservedObject var viewModel: SessionRecordingViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 28) {
+                // Header
+                VStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .fill(AppTheme.primaryGreen.opacity(0.15))
+                            .frame(width: 64, height: 64)
+
+                        Image(systemName: "folder.badge.plus")
+                            .font(.system(size: 32))
+                            .foregroundColor(AppTheme.primaryGreen)
+                    }
+
+                    Text("Nouvelle catégorie")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(AppTheme.textPrimary)
+
+                    Text("Créez une catégorie personnalisée")
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+                .padding(.top, 20)
+
+                // Form
+                VStack(alignment: .leading, spacing: 24) {
+                    // Nom
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label {
+                            Text("NOM")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .tracking(1)
+                                .foregroundColor(AppTheme.textSecondary)
+                        } icon: {
+                            Image(systemName: "textformat")
+                                .foregroundColor(AppTheme.primaryGreen)
+                        }
+
+                        TextField("Ex: Mathématiques", text: $viewModel.newCategoryName)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(16)
+                            .background(AppTheme.cardBackground)
+                            .cornerRadius(12)
+                            .foregroundColor(AppTheme.textPrimary)
+                            .autocapitalization(.words)
+                    }
+
+                    Divider()
+                        .background(AppTheme.darkGreen.opacity(0.3))
+
+                    // Couleur
+                    CategoryColorPicker(
+                        selectedColorId: $viewModel.newCategoryColorId,
+                        title: "Couleur"
+                    )
+                }
+                .glassCard(cornerRadius: 20, padding: 20)
+                .padding(.horizontal, 20)
+
+                Spacer()
+
+                // Bouton Créer
+                Button {
+                    viewModel.createNewCategory()
+                    dismiss()
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 20))
+
+                        Text("Créer la catégorie")
+                    }
+                }
+                .disabled(viewModel.newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .primaryButtonStyle(isEnabled: !viewModel.newCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
             }
-            .disabled(viewModel.newCategoryName.isEmpty)
-            Button("Annuler", role: .cancel) {
-                viewModel.newCategoryName = ""
-            }
-        } message: {
-            Text("Entrez le nom de la nouvelle catégorie")
         }
+        .background(AppTheme.backgroundView())
+        .grainEffect()
+        .navigationTitle("Nouvelle catégorie")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
