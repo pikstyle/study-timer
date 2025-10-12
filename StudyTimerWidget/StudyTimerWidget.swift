@@ -9,19 +9,46 @@ import WidgetKit
 import SwiftUI
 import Charts
 
+// MARK: - Widget Period
+enum WidgetPeriod: String, CaseIterable, Hashable {
+    case today = "Aujourd'hui"
+    case week = "Cette semaine"
+    case month = "Ce mois"
+
+    var icon: String {
+        switch self {
+        case .today: return "sun.max.fill"
+        case .week: return "calendar.badge.clock"
+        case .month: return "chart.bar.fill"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .today: return "Temps d'étude"
+        case .week: return "7 derniers jours"
+        case .month: return "30 derniers jours"
+        }
+    }
+}
+
 // MARK: - Timeline Entry
 struct StudyTimerEntry: TimelineEntry {
     let date: Date
-    let todayTime: TimeInterval
+    let period: WidgetPeriod
+    let totalTime: TimeInterval
     let chartData: [ChartDataPoint]
 }
 
 // MARK: - Timeline Provider
 struct StudyTimerProvider: TimelineProvider {
+    let period: WidgetPeriod
+
     func placeholder(in context: Context) -> StudyTimerEntry {
         StudyTimerEntry(
             date: Date(),
-            todayTime: 0,
+            period: period,
+            totalTime: 0,
             chartData: []
         )
     }
@@ -42,275 +69,235 @@ struct StudyTimerProvider: TimelineProvider {
     }
 
     private func createEntry() -> StudyTimerEntry {
-        // Récupérer les données depuis le repository partagé
         let repository = WidgetStudyRepository.shared
         let sessions = repository.getAllSessions()
+        let calendar = Calendar.current
 
-        // Calculer le temps d'aujourd'hui
-        let todaySessions = sessions.filter { session in
-            Calendar.current.isDate(session.date, inSameDayAs: Date())
+        // Filtrer les sessions selon la période
+        let filteredSessions: [WidgetStudySession]
+        switch period {
+        case .today:
+            filteredSessions = sessions.filter { calendar.isDate($0.date, inSameDayAs: Date()) }
+        case .week:
+            let weekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+            filteredSessions = sessions.filter { $0.date >= weekStart }
+        case .month:
+            let monthStart = calendar.dateInterval(of: .month, for: Date())?.start ?? Date()
+            filteredSessions = sessions.filter { $0.date >= monthStart }
         }
 
-        let todayTime = todaySessions.reduce(0) { $0 + $1.duration }
+        let totalTime = filteredSessions.reduce(0) { $0 + $1.duration }
 
         // Créer les données du chart
-        let todayCategories = Dictionary(grouping: todaySessions, by: { $0.categoryName })
+        let categories = Dictionary(grouping: filteredSessions, by: { $0.categoryName })
             .mapValues { $0.reduce(0) { $0 + $1.duration } }
 
-        let chartData = todayCategories.map { name, time in
+        let chartData = categories.map { name, time in
             ChartDataPoint(categoryName: name, value: time)
-        }
+        }.sorted { $0.value > $1.value }
 
         return StudyTimerEntry(
             date: Date(),
-            todayTime: todayTime,
+            period: period,
+            totalTime: totalTime,
             chartData: chartData
         )
     }
 }
 
-// MARK: - Widget View
-struct StudyTimerWidgetView: View {
-    var entry: StudyTimerProvider.Entry
-    @Environment(\.widgetFamily) var widgetFamily
-
-    var body: some View {
-        switch widgetFamily {
-        case .systemMedium:
-            MediumWidgetView(entry: entry)
-        case .systemLarge:
-            LargeWidgetView(entry: entry)
-        default:
-            SmallWidgetView(entry: entry)
-        }
-    }
-}
 
 // MARK: - Small Widget View
 struct SmallWidgetView: View {
     var entry: StudyTimerEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: "sun.max.fill")
-                    .font(.system(size: 16))
+        VStack(alignment: .leading, spacing: 0) {
+            // Header compact
+            HStack(spacing: 6) {
+                Image(systemName: entry.period.icon)
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white)
 
-                Text("Aujourd'hui")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+                Text(entry.period.rawValue)
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
             }
+            .padding(.bottom, 8)
 
             Spacer()
 
-            Text(TimeFormatter.format(entry.todayTime))
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+            // Time principal
+            Text(TimeFormatter.formatCompact(entry.totalTime))
+                .font(.system(size: 32, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
 
-            Text("Temps d'étude")
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.7))
+            // Subtitle
+            Text(entry.period.subtitle)
+                .font(.system(size: 11))
+                .foregroundColor(.white.opacity(0.6))
+                .padding(.top, 2)
+
+            Spacer()
         }
-        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding(14)
         .background(widgetBackground)
     }
 }
 
-// MARK: - Medium Widget View
-struct MediumWidgetView: View {
-    var entry: StudyTimerEntry
+// MARK: - Medium Overview Widget View
+struct OverviewMediumView: View {
+    var entry: AllPeriodsEntry
 
     var body: some View {
-        HStack(spacing: 16) {
-            // Left side - Stats
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    Image(systemName: "sun.max.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(.white)
-
-                    Text("Aujourd'hui")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+        HStack(spacing: 0) {
+            ForEach([WidgetPeriod.today, .week, .month], id: \.self) { period in
+                if period != .today {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 1)
+                        .padding(.vertical, 12)
                 }
 
-                Spacer()
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("TEMPS TOTAL")
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white.opacity(0.6))
-                        .tracking(1)
-
-                    Text(TimeFormatter.format(entry.todayTime))
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                }
-
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            // Right side - Mini Chart
-            if !entry.chartData.isEmpty {
-                VStack(spacing: 8) {
-                    Chart(entry.chartData) { dataPoint in
-                        SectorMark(
-                            angle: .value(
-                                Text(verbatim: dataPoint.categoryName),
-                                dataPoint.value
-                            ),
-                            innerRadius: .ratio(0.5)
-                        )
-                        .foregroundStyle(categoryColor(for: dataPoint.categoryName))
-                    }
-                    .frame(width: 100, height: 100)
-
-                    // Category legend (max 2 items)
-                    VStack(spacing: 4) {
-                        ForEach(Array(entry.chartData.prefix(2))) { dataPoint in
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .fill(categoryColor(for: dataPoint.categoryName))
-                                    .frame(width: 6, height: 6)
-
-                                Text(dataPoint.categoryName)
-                                    .font(.caption2)
-                                    .foregroundColor(.white.opacity(0.8))
-                                    .lineLimit(1)
-                            }
-                        }
-                    }
-                }
-            } else {
-                VStack {
-                    Image(systemName: "chart.pie")
-                        .font(.system(size: 36))
-                        .foregroundColor(.white.opacity(0.3))
-
-                    Text("Aucune session")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.5))
-                }
+                PeriodCompactView(
+                    period: period,
+                    time: entry.periods[period]?.time ?? 0
+                )
                 .frame(maxWidth: .infinity)
             }
         }
-        .padding()
+        .padding(14)
         .background(widgetBackground)
-    }
-
-    private func categoryColor(for name: String) -> Color {
-        return WidgetCategoryColors.color(for: name)
     }
 }
 
-// MARK: - Large Widget View
-struct LargeWidgetView: View {
-    var entry: StudyTimerEntry
+// MARK: - Period Compact View (for Medium widget)
+struct PeriodCompactView: View {
+    let period: WidgetPeriod
+    let time: TimeInterval
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.1))
-                        .frame(width: 44, height: 44)
+        VStack(spacing: 6) {
+            Image(systemName: period.icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white.opacity(0.9))
 
-                    Image(systemName: "sun.max.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.white)
-                }
+            Text(TimeFormatter.formatCompact(time))
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Aujourd'hui")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+            Text(shortTitle(for: period))
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(.white.opacity(0.6))
+                .lineLimit(1)
+        }
+    }
 
-                    Text("Temps d'étude")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.7))
-                }
+    private func shortTitle(for period: WidgetPeriod) -> String {
+        switch period {
+        case .today: return "Aujourd'hui"
+        case .week: return "Semaine"
+        case .month: return "Mois"
+        }
+    }
+}
 
+// MARK: - Large Detailed Widget View
+struct DetailedLargeView: View {
+    var entry: AllPeriodsEntry
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Title
+            HStack {
+                Text("Statistiques")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
                 Spacer()
             }
+            .padding(.bottom, 16)
 
-            // Total time
-            VStack(alignment: .leading, spacing: 6) {
-                Text("TEMPS TOTAL")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white.opacity(0.6))
-                    .tracking(1.2)
+            // Les 3 périodes
+            VStack(spacing: 12) {
+                ForEach([WidgetPeriod.today, .week, .month], id: \.self) { period in
+                    PeriodDetailRow(
+                        period: period,
+                        time: entry.periods[period]?.time ?? 0,
+                        chartData: entry.periods[period]?.chartData ?? []
+                    )
 
-                Text(TimeFormatter.format(entry.todayTime))
-                    .font(.system(size: 38, weight: .bold, design: .rounded))
+                    if period != .month {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.08))
+                            .frame(height: 1)
+                            .padding(.horizontal, 4)
+                    }
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .background(widgetBackground)
+    }
+}
+
+// MARK: - Period Detail Row (for Large widget)
+struct PeriodDetailRow: View {
+    let period: WidgetPeriod
+    let time: TimeInterval
+    let chartData: [ChartDataPoint]
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Icon + Info
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: period.icon)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+
+                    Text(period.rawValue)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+
+                Text(TimeFormatter.formatCompact(time))
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
             }
+            .frame(width: 120, alignment: .leading)
 
-            // Chart
-            if !entry.chartData.isEmpty {
-                VStack(spacing: 12) {
-                    Chart(entry.chartData) { dataPoint in
-                        SectorMark(
-                            angle: .value(
-                                Text(verbatim: dataPoint.categoryName),
-                                dataPoint.value
-                            ),
-                            innerRadius: .ratio(0.5)
-                        )
-                        .foregroundStyle(categoryColor(for: dataPoint.categoryName))
-                    }
-                    .frame(height: 140)
+            Spacer()
 
-                    // Category breakdown
-                    VStack(spacing: 6) {
-                        ForEach(entry.chartData) { dataPoint in
-                            HStack {
-                                Circle()
-                                    .fill(categoryColor(for: dataPoint.categoryName))
-                                    .frame(width: 8, height: 8)
+            // Mini categories
+            if !chartData.isEmpty {
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(Array(chartData.prefix(2))) { dataPoint in
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(WidgetCategoryColors.color(for: dataPoint.categoryName))
+                                .frame(width: 5, height: 5)
 
-                                Text(dataPoint.categoryName)
-                                    .font(.subheadline)
-                                    .foregroundColor(.white)
+                            Text(dataPoint.categoryName)
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.white.opacity(0.7))
+                                .lineLimit(1)
 
-                                Spacer()
-
-                                Text(TimeFormatter.format(dataPoint.value))
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.white)
-                            }
+                            Text(TimeFormatter.formatCompact(dataPoint.value))
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.9))
                         }
                     }
                 }
-            } else {
-                VStack(spacing: 12) {
-                    Spacer()
-                    Image(systemName: "chart.pie")
-                        .font(.system(size: 48))
-                        .foregroundColor(.white.opacity(0.3))
-
-                    Text("Aucune session enregistrée")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.5))
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding()
-        .background(widgetBackground)
-    }
-
-    private func categoryColor(for name: String) -> Color {
-        return WidgetCategoryColors.color(for: name)
+        .padding(.vertical, 4)
     }
 }
 
@@ -326,35 +313,193 @@ private var widgetBackground: some View {
     )
 }
 
-// MARK: - Widget Configuration
-@main
-struct StudyTimerWidget: Widget {
-    let kind: String = "StudyTimerWidget"
+// MARK: - All Periods Provider
+struct AllPeriodsProvider: TimelineProvider {
+    func placeholder(in context: Context) -> AllPeriodsEntry {
+        AllPeriodsEntry(date: Date(), periods: [:])
+    }
 
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: StudyTimerProvider()) { entry in
-            StudyTimerWidgetView(entry: entry)
-                .containerBackground(for: .widget) {
-                    widgetBackground
-                }
+    func getSnapshot(in context: Context, completion: @escaping (AllPeriodsEntry) -> Void) {
+        let entry = createEntry()
+        completion(entry)
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<AllPeriodsEntry>) -> Void) {
+        let entry = createEntry()
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date()
+        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+        completion(timeline)
+    }
+
+    private func createEntry() -> AllPeriodsEntry {
+        let repository = WidgetStudyRepository.shared
+        let sessions = repository.getAllSessions()
+        let calendar = Calendar.current
+
+        var periods: [WidgetPeriod: (time: TimeInterval, chartData: [ChartDataPoint])] = [:]
+
+        for period in WidgetPeriod.allCases {
+            let filteredSessions: [WidgetStudySession]
+            switch period {
+            case .today:
+                filteredSessions = sessions.filter { calendar.isDate($0.date, inSameDayAs: Date()) }
+            case .week:
+                let weekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+                filteredSessions = sessions.filter { $0.date >= weekStart }
+            case .month:
+                let monthStart = calendar.dateInterval(of: .month, for: Date())?.start ?? Date()
+                filteredSessions = sessions.filter { $0.date >= monthStart }
+            }
+
+            let totalTime = filteredSessions.reduce(0) { $0 + $1.duration }
+            let categories = Dictionary(grouping: filteredSessions, by: { $0.categoryName })
+                .mapValues { $0.reduce(0) { $0 + $1.duration } }
+            let chartData = categories.map { ChartDataPoint(categoryName: $0.key, value: $0.value) }
+                .sorted { $0.value > $1.value }
+
+            periods[period] = (time: totalTime, chartData: chartData)
         }
-        .configurationDisplayName("Temps d'étude")
-        .description("Visualisez votre temps d'étude d'aujourd'hui")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+
+        return AllPeriodsEntry(date: Date(), periods: periods)
     }
 }
 
-// MARK: - Preview
-#Preview(as: .systemMedium) {
-    StudyTimerWidget()
+struct AllPeriodsEntry: TimelineEntry {
+    let date: Date
+    let periods: [WidgetPeriod: (time: TimeInterval, chartData: [ChartDataPoint])]
+}
+
+// MARK: - Widget Bundle
+@main
+struct StudyTimerWidgetBundle: WidgetBundle {
+    var body: some Widget {
+        TodaySmallWidget()
+        WeekSmallWidget()
+        MonthSmallWidget()
+        OverviewMediumWidget()
+        DetailedLargeWidget()
+    }
+}
+
+// MARK: - Small Widgets (3)
+struct TodaySmallWidget: Widget {
+    let kind: String = "TodaySmallWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: StudyTimerProvider(period: .today)) { entry in
+            SmallWidgetView(entry: entry)
+                .containerBackground(for: .widget) { widgetBackground }
+        }
+        .configurationDisplayName("Aujourd'hui")
+        .description("Temps d'étude d'aujourd'hui")
+        .supportedFamilies([.systemSmall])
+    }
+}
+
+struct WeekSmallWidget: Widget {
+    let kind: String = "WeekSmallWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: StudyTimerProvider(period: .week)) { entry in
+            SmallWidgetView(entry: entry)
+                .containerBackground(for: .widget) { widgetBackground }
+        }
+        .configurationDisplayName("Cette semaine")
+        .description("Temps d'étude de la semaine")
+        .supportedFamilies([.systemSmall])
+    }
+}
+
+struct MonthSmallWidget: Widget {
+    let kind: String = "MonthSmallWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: StudyTimerProvider(period: .month)) { entry in
+            SmallWidgetView(entry: entry)
+                .containerBackground(for: .widget) { widgetBackground }
+        }
+        .configurationDisplayName("Ce mois")
+        .description("Temps d'étude du mois")
+        .supportedFamilies([.systemSmall])
+    }
+}
+
+// MARK: - Medium Widget (Vue d'ensemble)
+struct OverviewMediumWidget: Widget {
+    let kind: String = "OverviewMediumWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: AllPeriodsProvider()) { entry in
+            OverviewMediumView(entry: entry)
+                .containerBackground(for: .widget) { widgetBackground }
+        }
+        .configurationDisplayName("Vue d'ensemble")
+        .description("Aujourd'hui, semaine et mois en un coup d'œil")
+        .supportedFamilies([.systemMedium])
+    }
+}
+
+// MARK: - Large Widget (Statistiques complètes)
+struct DetailedLargeWidget: Widget {
+    let kind: String = "DetailedLargeWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: AllPeriodsProvider()) { entry in
+            DetailedLargeView(entry: entry)
+                .containerBackground(for: .widget) { widgetBackground }
+        }
+        .configurationDisplayName("Statistiques complètes")
+        .description("Toutes vos statistiques détaillées")
+        .supportedFamilies([.systemLarge])
+    }
+}
+
+// MARK: - Previews
+#Preview("Today Small", as: .systemSmall) {
+    TodaySmallWidget()
 } timeline: {
     StudyTimerEntry(
         date: Date(),
-        todayTime: 7200,
+        period: .today,
+        totalTime: 7200,
         chartData: [
             ChartDataPoint(categoryName: "Maths", value: 3600),
-            ChartDataPoint(categoryName: "Informatique", value: 2400),
-            ChartDataPoint(categoryName: "Statistiques", value: 1200)
+            ChartDataPoint(categoryName: "Informatique", value: 2400)
+        ]
+    )
+}
+
+#Preview("Overview Medium", as: .systemMedium) {
+    OverviewMediumWidget()
+} timeline: {
+    AllPeriodsEntry(
+        date: Date(),
+        periods: [
+            .today: (time: 7200, chartData: []),
+            .week: (time: 14400, chartData: []),
+            .month: (time: 28800, chartData: [])
+        ]
+    )
+}
+
+#Preview("Detailed Large", as: .systemLarge) {
+    DetailedLargeWidget()
+} timeline: {
+    AllPeriodsEntry(
+        date: Date(),
+        periods: [
+            .today: (time: 7200, chartData: [
+                ChartDataPoint(categoryName: "Maths", value: 3600),
+                ChartDataPoint(categoryName: "Info", value: 3600)
+            ]),
+            .week: (time: 14400, chartData: [
+                ChartDataPoint(categoryName: "Maths", value: 7200),
+                ChartDataPoint(categoryName: "Info", value: 7200)
+            ]),
+            .month: (time: 28800, chartData: [
+                ChartDataPoint(categoryName: "Maths", value: 14400),
+                ChartDataPoint(categoryName: "Info", value: 14400)
+            ])
         ]
     )
 }
